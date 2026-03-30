@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/2026_kyoto_osaka/',
+  base: '/travel-dashboard/',
   plugins: [
     react(),
     VitePWA({
@@ -18,8 +18,8 @@ export default defineConfig({
         background_color: '#0f0f17',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/2026_kyoto_osaka/',
-        scope: '/2026_kyoto_osaka/',
+        start_url: '/travel-dashboard/',
+        scope: '/travel-dashboard/',
         icons: [
           {
             src: 'icons/icon-192.png',
