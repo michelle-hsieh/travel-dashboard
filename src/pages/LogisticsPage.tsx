@@ -6,24 +6,30 @@ import FileUpload from '../components/shared/FileUpload';
 import AttachmentList from '../components/shared/AttachmentList';
 import PlaceAutocomplete from '../components/shared/PlaceAutocomplete';
 import { parseFlightPdf } from '../utils/parseFlightPdf';
-import type { Flight, Hotel, Ticket, ChecklistItem, BudgetItem } from '../types';
+import type { Flight, Hotel, Ticket, ChecklistItem, BudgetItem, Role } from '../types';
 
 interface LogisticsPageProps {
   tripId: number;
+  role: Role;
+  readOnly?: boolean;
 }
 
 type LogisticsTab = 'flights' | 'hotels' | 'tickets' | 'checklist' | 'budget';
 
-export default function LogisticsPage({ tripId }: LogisticsPageProps) {
+export default function LogisticsPage({ tripId, role, readOnly = false }: LogisticsPageProps) {
+  const isAdmin = role === 'admin';
   const [activeTab, setActiveTab] = useState<LogisticsTab>('flights');
 
-  const tabs: { key: LogisticsTab; label: string; icon: string }[] = [
+  const allTabs: { key: LogisticsTab; label: string; icon: string }[] = [
     { key: 'flights', label: '機票', icon: '✈️' },
     { key: 'hotels', label: '住宿', icon: '🏨' },
     { key: 'tickets', label: '票券', icon: '🎫' },
     { key: 'checklist', label: '清單', icon: '✅' },
     { key: 'budget', label: '預算', icon: '💰' },
   ];
+
+  // Non-admin: hide checklist tab entirely
+  const tabs = isAdmin ? allTabs : allTabs.filter(t => t.key !== 'checklist');
 
   return (
     <div>
@@ -43,17 +49,19 @@ export default function LogisticsPage({ tripId }: LogisticsPageProps) {
         ))}
       </div>
 
-      {activeTab === 'flights' && <FlightsSection tripId={tripId} />}
-      {activeTab === 'hotels' && <HotelsSection tripId={tripId} />}
-      {activeTab === 'tickets' && <TicketsSection tripId={tripId} />}
-      {activeTab === 'checklist' && <ChecklistSection tripId={tripId} />}
-      {activeTab === 'budget' && <BudgetSection tripId={tripId} />}
+      <fieldset disabled={readOnly} style={readOnly ? { opacity: 0.8 } : undefined}>
+        {activeTab === 'flights' && <FlightsSection tripId={tripId} readOnly={readOnly} />}
+        {activeTab === 'hotels' && <HotelsSection tripId={tripId} readOnly={readOnly} />}
+        {activeTab === 'tickets' && <TicketsSection tripId={tripId} readOnly={readOnly} />}
+        {activeTab === 'checklist' && isAdmin && <ChecklistSection tripId={tripId} readOnly={readOnly} />}
+        {activeTab === 'budget' && <BudgetSection tripId={tripId} isAdmin={isAdmin} readOnly={readOnly} />}
+      </fieldset>
     </div>
   );
 }
 
 /* ===================== FLIGHTS ===================== */
-function FlightsSection({ tripId }: { tripId: number }) {
+function FlightsSection({ tripId, readOnly = false }: { tripId: number; readOnly?: boolean }) {
   const flights = useLiveQuery(
     () => db.flights.where('tripId').equals(tripId).sortBy('sortOrder'),
     [tripId]
@@ -63,6 +71,7 @@ function FlightsSection({ tripId }: { tripId: number }) {
   const [parseMsg, setParseMsg] = useState('');
 
   const addFlight = async () => {
+    if (readOnly) return;
     await db.flights.add({
       tripId,
       airline: '',
@@ -76,6 +85,7 @@ function FlightsSection({ tripId }: { tripId: number }) {
   };
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (readOnly) return;
     const file = e.target.files?.[0];
     if (!file) return;
     setParsing(true);
@@ -112,8 +122,12 @@ function FlightsSection({ tripId }: { tripId: number }) {
     }
   };
 
-  const update = (id: number, data: Partial<Flight>) => db.flights.update(id, data);
+  const update = (id: number, data: Partial<Flight>) => {
+    if (readOnly) return;
+    return db.flights.update(id, data);
+  };
   const remove = async (id: number) => {
+    if (readOnly) return;
     await db.attachments.filter(a => a.parentType === 'flight' && a.parentId === id).delete();
     await db.flights.delete(id);
   };
@@ -189,13 +203,14 @@ function FlightsSection({ tripId }: { tripId: number }) {
 }
 
 /* ===================== HOTELS ===================== */
-function HotelsSection({ tripId }: { tripId: number }) {
+function HotelsSection({ tripId, readOnly = false }: { tripId: number; readOnly?: boolean }) {
   const hotels = useLiveQuery(
     () => db.hotels.where('tripId').equals(tripId).sortBy('sortOrder'),
     [tripId]
   );
 
   const addHotel = async () => {
+    if (readOnly) return;
     await db.hotels.add({
       tripId,
       name: '',
@@ -206,8 +221,12 @@ function HotelsSection({ tripId }: { tripId: number }) {
     });
   };
 
-  const update = (id: number, data: Partial<Hotel>) => db.hotels.update(id, data);
+  const update = (id: number, data: Partial<Hotel>) => {
+    if (readOnly) return;
+    return db.hotels.update(id, data);
+  };
   const remove = async (id: number) => {
+    if (readOnly) return;
     await db.attachments.filter(a => a.parentType === 'hotel' && a.parentId === id).delete();
     await db.hotels.delete(id);
   };
@@ -272,13 +291,14 @@ function HotelCard({ hotel, onUpdate, onRemove }: { hotel: Hotel; onUpdate: (dat
 }
 
 /* ===================== TICKETS ===================== */
-function TicketsSection({ tripId }: { tripId: number }) {
+function TicketsSection({ tripId, readOnly = false }: { tripId: number; readOnly?: boolean }) {
   const tickets = useLiveQuery(
     () => db.tickets.where('tripId').equals(tripId).sortBy('sortOrder'),
     [tripId]
   );
 
   const addTicket = async () => {
+    if (readOnly) return;
     await db.tickets.add({
       tripId,
       title: '',
@@ -286,8 +306,12 @@ function TicketsSection({ tripId }: { tripId: number }) {
     });
   };
 
-  const update = (id: number, data: Partial<Ticket>) => db.tickets.update(id, data);
+  const update = (id: number, data: Partial<Ticket>) => {
+    if (readOnly) return;
+    return db.tickets.update(id, data);
+  };
   const remove = async (id: number) => {
+    if (readOnly) return;
     await db.attachments.filter(a => a.parentType === 'ticket' && a.parentId === id).delete();
     await db.tickets.delete(id);
   };
@@ -323,7 +347,7 @@ function TicketsSection({ tripId }: { tripId: number }) {
 }
 
 /* ===================== CHECKLIST ===================== */
-function ChecklistSection({ tripId }: { tripId: number }) {
+function ChecklistSection({ tripId, readOnly = false }: { tripId: number; readOnly?: boolean }) {
   const items = useLiveQuery(
     () => db.checklistItems.where('tripId').equals(tripId).sortBy('sortOrder'),
     [tripId]
@@ -334,6 +358,7 @@ function ChecklistSection({ tripId }: { tripId: number }) {
   if (categories.length === 0) categories.push('行前準備', '伴手禮');
 
   const addItem = async (category: string) => {
+    if (readOnly) return;
     const catItems = items?.filter(i => i.category === category) ?? [];
     await db.checklistItems.add({
       tripId,
@@ -345,8 +370,14 @@ function ChecklistSection({ tripId }: { tripId: number }) {
     });
   };
 
-  const update = (id: number, data: Partial<ChecklistItem>) => db.checklistItems.update(id, data);
-  const remove = (id: number) => db.checklistItems.delete(id);
+  const update = (id: number, data: Partial<ChecklistItem>) => {
+    if (readOnly) return;
+    return db.checklistItems.update(id, data);
+  };
+  const remove = (id: number) => {
+    if (readOnly) return;
+    return db.checklistItems.delete(id);
+  };
 
   return (
     <div>
@@ -417,7 +448,7 @@ function ChecklistSection({ tripId }: { tripId: number }) {
 }
 
 /* ===================== BUDGET ===================== */
-function BudgetSection({ tripId }: { tripId: number }) {
+function BudgetSection({ tripId, isAdmin, readOnly = false }: { tripId: number; isAdmin: boolean; readOnly?: boolean }) {
   const budgetItems = useLiveQuery(
     () => db.budgetItems.where('tripId').equals(tripId).sortBy('sortOrder'),
     [tripId]
@@ -431,6 +462,7 @@ function BudgetSection({ tripId }: { tripId: number }) {
   const checklistItems = useLiveQuery(() => db.checklistItems.where('tripId').equals(tripId).toArray(), [tripId]);
 
   const addItem = async () => {
+    if (readOnly) return;
     await db.budgetItems.add({
       tripId,
       category: '',
@@ -441,8 +473,14 @@ function BudgetSection({ tripId }: { tripId: number }) {
     });
   };
 
-  const update = (id: number, data: Partial<BudgetItem>) => db.budgetItems.update(id, data);
-  const remove = (id: number) => db.budgetItems.delete(id);
+  const update = (id: number, data: Partial<BudgetItem>) => {
+    if (readOnly) return;
+    return db.budgetItems.update(id, data);
+  };
+  const remove = (id: number) => {
+    if (readOnly) return;
+    return db.budgetItems.delete(id);
+  };
 
   // Approximate exchange rates to TWD fallback
   const fallbackToTWD: Record<string, number> = {
@@ -488,7 +526,10 @@ function BudgetSection({ tripId }: { tripId: number }) {
   hotels?.forEach(h => { if (h.amount) allCosts.push({ amount: h.amount, currency: h.currency || 'TWD', source: '住宿' }); });
   tickets?.forEach(t => { if (t.amount) allCosts.push({ amount: t.amount, currency: t.currency || 'TWD', source: '票券' }); });
   places?.forEach(p => { if (p.amount) allCosts.push({ amount: p.amount, currency: p.currency || 'JPY', source: '景點' }); });
-  checklistItems?.forEach(c => { if (c.amount) allCosts.push({ amount: c.amount, currency: c.currency || 'TWD', source: '清單' }); });
+  // Only include checklist costs for admin — prevent leaking hidden amounts
+  if (isAdmin) {
+    checklistItems?.forEach(c => { if (c.amount) allCosts.push({ amount: c.amount, currency: c.currency || 'TWD', source: '清單' }); });
+  }
 
   const totalsByCurrency: Record<string, number> = {};
   allCosts.forEach(c => {

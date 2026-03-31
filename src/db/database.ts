@@ -35,6 +35,9 @@ export class TravelDB extends Dexie {
     this.version(2).stores({
       attachments: '++id, [parentType+parentId], parentId, parentType, createdAt',
     });
+    this.version(3).stores({
+      trips: '++id, firebaseId, name, createdAt',
+    });
   }
 }
 

@@ -1,0 +1,824 @@
+ Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ [2026-03-31T02:41:10.842Z]  @firebase/firestore: Firestore (12.11.0): BloomFilter error:  {"name":"BloomFilterError"}
+defaultLogHandler @ index.esm-BKkuX9hR.js?v=0549637f:1261
+ [2026-03-31T02:41:10.845Z]  @firebase/firestore: Firestore (12.11.0): BloomFilter error:  {"name":"BloomFilterError"}
+defaultLogHandler @ index.esm-BKkuX9hR.js?v=0549637f:1261
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection resources: 
+getSub @ sync.ts:258
+ Could not fetch subcollection tickets: 
+getSub @ sync.ts:258
+ Could not fetch subcollection budgetItems: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection hotels: 
+getSub @ sync.ts:258
+ Could not fetch subcollection flights: 
+getSub @ sync.ts:258
+ Could not fetch subcollection days: 
+getSub @ sync.ts:258
+ Could not fetch subcollection places: 
+getSub @ sync.ts:258
+sync.ts:271 Could not fetch subcollection tickets: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection resources: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection budgetItems: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection days: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection budgetItems: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection hotels: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection flights: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection places: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection resources: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection tickets: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection tickets: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection places: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection budgetItems: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection days: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection hotels: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection flights: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection resources: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection flights: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection places: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection days: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection hotels: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection resources: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection budgetItems: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection tickets: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection places: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection days: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection resources: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection tickets: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection budgetItems: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection flights: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection hotels: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection places: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection days: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection tickets: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection flights: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection hotels: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection resources: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection budgetItems: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection flights: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection days: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection places: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection hotels: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection budgetItems: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection tickets: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection resources: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection places: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection days: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection hotels: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection flights: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection budgetItems: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection tickets: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection resources: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+sync.ts:271 Could not fetch subcollection days: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+await in getSub
+refreshTripFromCloud @ sync.ts:287
+await in refreshTripFromCloud
+(anonymous) @ useFirestoreSync.ts:85
+next @ firebase_firestore.js?v=0549637f:20222
+(anonymous) @ firebase_firestore.js?v=0549637f:16251
+setTimeout
+Ou @ firebase_firestore.js?v=0549637f:16250
+next @ firebase_firestore.js?v=0549637f:16241
+Fa @ firebase_firestore.js?v=0549637f:15162
+__PRIVATE_eventManagerOnWatchChange @ firebase_firestore.js?v=0549637f:15121
+__PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore @ firebase_firestore.js?v=0549637f:15829
+await in __PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore
+__PRIVATE_syncEngineApplyRemoteEvent @ firebase_firestore.js?v=0549637f:15672
+await in __PRIVATE_syncEngineApplyRemoteEvent
+__PRIVATE_raiseWatchSnapshot @ firebase_firestore.js?v=0549637f:14632
+__PRIVATE_onWatchStreamChange @ firebase_firestore.js?v=0549637f:14633
+await in __PRIVATE_onWatchStreamChange
+onNext @ firebase_firestore.js?v=0549637f:14316
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:17311
+(anonymous) @ firebase_firestore.js?v=0549637f:17331
+Promise.then
+cc @ firebase_firestore.js?v=0549637f:17331
+enqueue @ firebase_firestore.js?v=0549637f:17311
+enqueueAndForget @ firebase_firestore.js?v=0549637f:17296
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+__ @ firebase_firestore.js?v=0549637f:13816
+(anonymous) @ firebase_firestore.js?v=0549637f:13948
+(anonymous) @ firebase_firestore.js?v=0549637f:13837
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Z.qa @ firebase_firestore.js?v=0549637f:2467
+Lb @ firebase_firestore.js?v=0549637f:1384
+N.Y @ firebase_firestore.js?v=0549637f:1243
+N.ba @ firebase_firestore.js?v=0549637f:1194
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Qc @ firebase_firestore.js?v=0549637f:1888
+h.Xa @ firebase_firestore.js?v=0549637f:1883
+h.Ca @ firebase_firestore.js?v=0549637f:1880
+Gc @ firebase_firestore.js?v=0549637f:1778
+h.Ma @ firebase_firestore.js?v=0549637f:1745
+sync.ts:271 Could not fetch subcollection places: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+await in getSub
+refreshTripFromCloud @ sync.ts:288
+await in refreshTripFromCloud
+(anonymous) @ useFirestoreSync.ts:85
+next @ firebase_firestore.js?v=0549637f:20222
+(anonymous) @ firebase_firestore.js?v=0549637f:16251
+setTimeout
+Ou @ firebase_firestore.js?v=0549637f:16250
+next @ firebase_firestore.js?v=0549637f:16241
+Fa @ firebase_firestore.js?v=0549637f:15162
+__PRIVATE_eventManagerOnWatchChange @ firebase_firestore.js?v=0549637f:15121
+__PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore @ firebase_firestore.js?v=0549637f:15829
+await in __PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore
+__PRIVATE_syncEngineApplyRemoteEvent @ firebase_firestore.js?v=0549637f:15672
+await in __PRIVATE_syncEngineApplyRemoteEvent
+__PRIVATE_raiseWatchSnapshot @ firebase_firestore.js?v=0549637f:14632
+__PRIVATE_onWatchStreamChange @ firebase_firestore.js?v=0549637f:14633
+await in __PRIVATE_onWatchStreamChange
+onNext @ firebase_firestore.js?v=0549637f:14316
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:17311
+(anonymous) @ firebase_firestore.js?v=0549637f:17331
+Promise.then
+cc @ firebase_firestore.js?v=0549637f:17331
+enqueue @ firebase_firestore.js?v=0549637f:17311
+enqueueAndForget @ firebase_firestore.js?v=0549637f:17296
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+__ @ firebase_firestore.js?v=0549637f:13816
+(anonymous) @ firebase_firestore.js?v=0549637f:13948
+(anonymous) @ firebase_firestore.js?v=0549637f:13837
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Z.qa @ firebase_firestore.js?v=0549637f:2467
+Lb @ firebase_firestore.js?v=0549637f:1384
+N.Y @ firebase_firestore.js?v=0549637f:1243
+N.ba @ firebase_firestore.js?v=0549637f:1194
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Qc @ firebase_firestore.js?v=0549637f:1888
+h.Xa @ firebase_firestore.js?v=0549637f:1883
+h.Ca @ firebase_firestore.js?v=0549637f:1880
+Gc @ firebase_firestore.js?v=0549637f:1778
+h.Ma @ firebase_firestore.js?v=0549637f:1745
+sync.ts:271 Could not fetch subcollection hotels: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+await in getSub
+refreshTripFromCloud @ sync.ts:291
+await in refreshTripFromCloud
+(anonymous) @ useFirestoreSync.ts:85
+next @ firebase_firestore.js?v=0549637f:20222
+(anonymous) @ firebase_firestore.js?v=0549637f:16251
+setTimeout
+Ou @ firebase_firestore.js?v=0549637f:16250
+next @ firebase_firestore.js?v=0549637f:16241
+Fa @ firebase_firestore.js?v=0549637f:15162
+__PRIVATE_eventManagerOnWatchChange @ firebase_firestore.js?v=0549637f:15121
+__PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore @ firebase_firestore.js?v=0549637f:15829
+await in __PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore
+__PRIVATE_syncEngineApplyRemoteEvent @ firebase_firestore.js?v=0549637f:15672
+await in __PRIVATE_syncEngineApplyRemoteEvent
+__PRIVATE_raiseWatchSnapshot @ firebase_firestore.js?v=0549637f:14632
+__PRIVATE_onWatchStreamChange @ firebase_firestore.js?v=0549637f:14633
+await in __PRIVATE_onWatchStreamChange
+onNext @ firebase_firestore.js?v=0549637f:14316
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:17311
+(anonymous) @ firebase_firestore.js?v=0549637f:17331
+Promise.then
+cc @ firebase_firestore.js?v=0549637f:17331
+enqueue @ firebase_firestore.js?v=0549637f:17311
+enqueueAndForget @ firebase_firestore.js?v=0549637f:17296
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+__ @ firebase_firestore.js?v=0549637f:13816
+(anonymous) @ firebase_firestore.js?v=0549637f:13948
+(anonymous) @ firebase_firestore.js?v=0549637f:13837
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Z.qa @ firebase_firestore.js?v=0549637f:2467
+Lb @ firebase_firestore.js?v=0549637f:1384
+N.Y @ firebase_firestore.js?v=0549637f:1243
+N.ba @ firebase_firestore.js?v=0549637f:1194
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Qc @ firebase_firestore.js?v=0549637f:1888
+h.Xa @ firebase_firestore.js?v=0549637f:1883
+h.Ca @ firebase_firestore.js?v=0549637f:1880
+Gc @ firebase_firestore.js?v=0549637f:1778
+h.Ma @ firebase_firestore.js?v=0549637f:1745
+sync.ts:271 Could not fetch subcollection flights: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+await in getSub
+refreshTripFromCloud @ sync.ts:290
+await in refreshTripFromCloud
+(anonymous) @ useFirestoreSync.ts:85
+next @ firebase_firestore.js?v=0549637f:20222
+(anonymous) @ firebase_firestore.js?v=0549637f:16251
+setTimeout
+Ou @ firebase_firestore.js?v=0549637f:16250
+next @ firebase_firestore.js?v=0549637f:16241
+Fa @ firebase_firestore.js?v=0549637f:15162
+__PRIVATE_eventManagerOnWatchChange @ firebase_firestore.js?v=0549637f:15121
+__PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore @ firebase_firestore.js?v=0549637f:15829
+await in __PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore
+__PRIVATE_syncEngineApplyRemoteEvent @ firebase_firestore.js?v=0549637f:15672
+await in __PRIVATE_syncEngineApplyRemoteEvent
+__PRIVATE_raiseWatchSnapshot @ firebase_firestore.js?v=0549637f:14632
+__PRIVATE_onWatchStreamChange @ firebase_firestore.js?v=0549637f:14633
+await in __PRIVATE_onWatchStreamChange
+onNext @ firebase_firestore.js?v=0549637f:14316
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:17311
+(anonymous) @ firebase_firestore.js?v=0549637f:17331
+Promise.then
+cc @ firebase_firestore.js?v=0549637f:17331
+enqueue @ firebase_firestore.js?v=0549637f:17311
+enqueueAndForget @ firebase_firestore.js?v=0549637f:17296
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+__ @ firebase_firestore.js?v=0549637f:13816
+(anonymous) @ firebase_firestore.js?v=0549637f:13948
+(anonymous) @ firebase_firestore.js?v=0549637f:13837
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Z.qa @ firebase_firestore.js?v=0549637f:2467
+Lb @ firebase_firestore.js?v=0549637f:1384
+N.Y @ firebase_firestore.js?v=0549637f:1243
+N.ba @ firebase_firestore.js?v=0549637f:1194
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Qc @ firebase_firestore.js?v=0549637f:1888
+h.Xa @ firebase_firestore.js?v=0549637f:1883
+h.Ca @ firebase_firestore.js?v=0549637f:1880
+Gc @ firebase_firestore.js?v=0549637f:1778
+h.Ma @ firebase_firestore.js?v=0549637f:1745
+sync.ts:271 Could not fetch subcollection tickets: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+await in getSub
+refreshTripFromCloud @ sync.ts:292
+await in refreshTripFromCloud
+(anonymous) @ useFirestoreSync.ts:85
+next @ firebase_firestore.js?v=0549637f:20222
+(anonymous) @ firebase_firestore.js?v=0549637f:16251
+setTimeout
+Ou @ firebase_firestore.js?v=0549637f:16250
+next @ firebase_firestore.js?v=0549637f:16241
+Fa @ firebase_firestore.js?v=0549637f:15162
+__PRIVATE_eventManagerOnWatchChange @ firebase_firestore.js?v=0549637f:15121
+__PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore @ firebase_firestore.js?v=0549637f:15829
+await in __PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore
+__PRIVATE_syncEngineApplyRemoteEvent @ firebase_firestore.js?v=0549637f:15672
+await in __PRIVATE_syncEngineApplyRemoteEvent
+__PRIVATE_raiseWatchSnapshot @ firebase_firestore.js?v=0549637f:14632
+__PRIVATE_onWatchStreamChange @ firebase_firestore.js?v=0549637f:14633
+await in __PRIVATE_onWatchStreamChange
+onNext @ firebase_firestore.js?v=0549637f:14316
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:17311
+(anonymous) @ firebase_firestore.js?v=0549637f:17331
+Promise.then
+cc @ firebase_firestore.js?v=0549637f:17331
+enqueue @ firebase_firestore.js?v=0549637f:17311
+enqueueAndForget @ firebase_firestore.js?v=0549637f:17296
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+__ @ firebase_firestore.js?v=0549637f:13816
+(anonymous) @ firebase_firestore.js?v=0549637f:13948
+(anonymous) @ firebase_firestore.js?v=0549637f:13837
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Z.qa @ firebase_firestore.js?v=0549637f:2467
+Lb @ firebase_firestore.js?v=0549637f:1384
+N.Y @ firebase_firestore.js?v=0549637f:1243
+N.ba @ firebase_firestore.js?v=0549637f:1194
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Qc @ firebase_firestore.js?v=0549637f:1888
+h.Xa @ firebase_firestore.js?v=0549637f:1883
+h.Ca @ firebase_firestore.js?v=0549637f:1880
+Gc @ firebase_firestore.js?v=0549637f:1778
+h.Ma @ firebase_firestore.js?v=0549637f:1745
+sync.ts:271 Could not fetch subcollection budgetItems: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+await in getSub
+refreshTripFromCloud @ sync.ts:294
+await in refreshTripFromCloud
+(anonymous) @ useFirestoreSync.ts:85
+next @ firebase_firestore.js?v=0549637f:20222
+(anonymous) @ firebase_firestore.js?v=0549637f:16251
+setTimeout
+Ou @ firebase_firestore.js?v=0549637f:16250
+next @ firebase_firestore.js?v=0549637f:16241
+Fa @ firebase_firestore.js?v=0549637f:15162
+__PRIVATE_eventManagerOnWatchChange @ firebase_firestore.js?v=0549637f:15121
+__PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore @ firebase_firestore.js?v=0549637f:15829
+await in __PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore
+__PRIVATE_syncEngineApplyRemoteEvent @ firebase_firestore.js?v=0549637f:15672
+await in __PRIVATE_syncEngineApplyRemoteEvent
+__PRIVATE_raiseWatchSnapshot @ firebase_firestore.js?v=0549637f:14632
+__PRIVATE_onWatchStreamChange @ firebase_firestore.js?v=0549637f:14633
+await in __PRIVATE_onWatchStreamChange
+onNext @ firebase_firestore.js?v=0549637f:14316
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:17311
+(anonymous) @ firebase_firestore.js?v=0549637f:17331
+Promise.then
+cc @ firebase_firestore.js?v=0549637f:17331
+enqueue @ firebase_firestore.js?v=0549637f:17311
+enqueueAndForget @ firebase_firestore.js?v=0549637f:17296
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+__ @ firebase_firestore.js?v=0549637f:13816
+(anonymous) @ firebase_firestore.js?v=0549637f:13948
+(anonymous) @ firebase_firestore.js?v=0549637f:13837
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Z.qa @ firebase_firestore.js?v=0549637f:2467
+Lb @ firebase_firestore.js?v=0549637f:1384
+N.Y @ firebase_firestore.js?v=0549637f:1243
+N.ba @ firebase_firestore.js?v=0549637f:1194
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Qc @ firebase_firestore.js?v=0549637f:1888
+h.Xa @ firebase_firestore.js?v=0549637f:1883
+h.Ca @ firebase_firestore.js?v=0549637f:1880
+Gc @ firebase_firestore.js?v=0549637f:1778
+h.Ma @ firebase_firestore.js?v=0549637f:1745
+sync.ts:271 Could not fetch subcollection resources: FirebaseError: Missing or insufficient permissions.
+getSub @ sync.ts:271
+await in getSub
+refreshTripFromCloud @ sync.ts:295
+await in refreshTripFromCloud
+(anonymous) @ useFirestoreSync.ts:85
+next @ firebase_firestore.js?v=0549637f:20222
+(anonymous) @ firebase_firestore.js?v=0549637f:16251
+setTimeout
+Ou @ firebase_firestore.js?v=0549637f:16250
+next @ firebase_firestore.js?v=0549637f:16241
+Fa @ firebase_firestore.js?v=0549637f:15162
+__PRIVATE_eventManagerOnWatchChange @ firebase_firestore.js?v=0549637f:15121
+__PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore @ firebase_firestore.js?v=0549637f:15829
+await in __PRIVATE_syncEngineEmitNewSnapsAndNotifyLocalStore
+__PRIVATE_syncEngineApplyRemoteEvent @ firebase_firestore.js?v=0549637f:15672
+await in __PRIVATE_syncEngineApplyRemoteEvent
+__PRIVATE_raiseWatchSnapshot @ firebase_firestore.js?v=0549637f:14632
+__PRIVATE_onWatchStreamChange @ firebase_firestore.js?v=0549637f:14633
+await in __PRIVATE_onWatchStreamChange
+onNext @ firebase_firestore.js?v=0549637f:14316
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:17311
+(anonymous) @ firebase_firestore.js?v=0549637f:17331
+Promise.then
+cc @ firebase_firestore.js?v=0549637f:17331
+enqueue @ firebase_firestore.js?v=0549637f:17311
+enqueueAndForget @ firebase_firestore.js?v=0549637f:17296
+(anonymous) @ firebase_firestore.js?v=0549637f:14289
+(anonymous) @ firebase_firestore.js?v=0549637f:14271
+__ @ firebase_firestore.js?v=0549637f:13816
+(anonymous) @ firebase_firestore.js?v=0549637f:13948
+(anonymous) @ firebase_firestore.js?v=0549637f:13837
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Z.qa @ firebase_firestore.js?v=0549637f:2467
+Lb @ firebase_firestore.js?v=0549637f:1384
+N.Y @ firebase_firestore.js?v=0549637f:1243
+N.ba @ firebase_firestore.js?v=0549637f:1194
+Va @ firebase_firestore.js?v=0549637f:906
+D @ firebase_firestore.js?v=0549637f:874
+Qc @ firebase_firestore.js?v=0549637f:1888
+h.Xa @ firebase_firestore.js?v=0549637f:1883
+h.Ca @ firebase_firestore.js?v=0549637f:1880
+Gc @ firebase_firestore.js?v=0549637f:1778
+h.Ma @ firebase_firestore.js?v=0549637f:1745

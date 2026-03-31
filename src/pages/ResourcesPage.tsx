@@ -5,9 +5,10 @@ import type { Resource } from '../types';
 
 interface ResourcesPageProps {
   tripId: number;
+  readOnly?: boolean;
 }
 
-export default function ResourcesPage({ tripId }: ResourcesPageProps) {
+export default function ResourcesPage({ tripId, readOnly = false }: ResourcesPageProps) {
   const [activeTab, setActiveTab] = useState<'manual' | 'auto'>('manual');
 
   return (
@@ -27,7 +28,7 @@ export default function ResourcesPage({ tripId }: ResourcesPageProps) {
       </div>
 
       {activeTab === 'manual' ? (
-        <ManualLinks tripId={tripId} />
+        <ManualLinks tripId={tripId} readOnly={readOnly} />
       ) : (
         <AutoLinks tripId={tripId} />
       )}
@@ -36,7 +37,7 @@ export default function ResourcesPage({ tripId }: ResourcesPageProps) {
 }
 
 /* ========== Manual Links Section ========== */
-function ManualLinks({ tripId }: { tripId: number }) {
+function ManualLinks({ tripId, readOnly = false }: { tripId: number; readOnly?: boolean }) {
   const resources = useLiveQuery(
     () => db.resources.where('tripId').equals(tripId).sortBy('sortOrder'),
     [tripId]
@@ -83,33 +84,35 @@ function ManualLinks({ tripId }: { tripId: number }) {
 
   return (
     <div>
-      {/* Add form */}
-      <div className="card" style={{ marginBottom: 'var(--sp-md)' }}>
-        <div className="section-title" style={{ fontSize: '0.9rem' }}>＋ 新增連結</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-sm)' }}>
-          <input
-            value={newUrl}
-            onChange={e => setNewUrl(e.target.value)}
-            placeholder="https://..."
-            onKeyDown={e => e.key === 'Enter' && addResource()}
-          />
-          <div className="form-row">
+      {/* Add form — hidden in read-only mode */}
+      {!readOnly && (
+        <div className="card" style={{ marginBottom: 'var(--sp-md)' }}>
+          <div className="section-title" style={{ fontSize: '0.9rem' }}>＋ 新增連結</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-sm)' }}>
             <input
-              value={newTitle}
-              onChange={e => setNewTitle(e.target.value)}
-              placeholder="標題（選填）"
+              value={newUrl}
+              onChange={e => setNewUrl(e.target.value)}
+              placeholder="https://..."
+              onKeyDown={e => e.key === 'Enter' && addResource()}
             />
-            <input
-              value={newCategory}
-              onChange={e => setNewCategory(e.target.value)}
-              placeholder="類別（選填）"
-            />
+            <div className="form-row">
+              <input
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                placeholder="標題（選填）"
+              />
+              <input
+                value={newCategory}
+                onChange={e => setNewCategory(e.target.value)}
+                placeholder="類別（選填）"
+              />
+            </div>
+            <button className="btn btn-primary" onClick={addResource} style={{ alignSelf: 'flex-end' }}>
+              新增
+            </button>
           </div>
-          <button className="btn btn-primary" onClick={addResource} style={{ alignSelf: 'flex-end' }}>
-            新增
-          </button>
         </div>
-      </div>
+      )}
 
       {/* Resources list */}
       {(!resources || resources.length === 0) ? (
@@ -123,7 +126,7 @@ function ManualLinks({ tripId }: { tripId: number }) {
           {uncategorized.length > 0 && (
             <div style={{ marginBottom: 'var(--sp-lg)' }}>
               {uncategorized.map(r => (
-                <ResourceCard key={r.id} resource={r} onDelete={deleteResource} onUpdate={updateResource} />
+                <ResourceCard key={r.id} resource={r} onDelete={deleteResource} onUpdate={updateResource} readOnly={readOnly} />
               ))}
             </div>
           )}
@@ -132,7 +135,7 @@ function ManualLinks({ tripId }: { tripId: number }) {
             <div key={cat} style={{ marginBottom: 'var(--sp-lg)' }}>
               <div className="section-title">{cat}</div>
               {items.map(r => (
-                <ResourceCard key={r.id} resource={r} onDelete={deleteResource} onUpdate={updateResource} />
+                <ResourceCard key={r.id} resource={r} onDelete={deleteResource} onUpdate={updateResource} readOnly={readOnly} />
               ))}
             </div>
           ))}
@@ -146,10 +149,12 @@ function ResourceCard({
   resource: r,
   onDelete,
   onUpdate,
+  readOnly = false,
 }: {
   resource: Resource;
   onDelete: (id: number) => void;
   onUpdate: (id: number, updates: Partial<Resource>) => void;
+  readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(r.title);
@@ -186,10 +191,12 @@ function ResourceCard({
               {r.url}
             </a>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--sp-xs)', flexShrink: 0 }}>
-            <button className="btn-icon btn-secondary" onClick={() => setEditing(true)} title="編輯" style={{ fontSize: '0.75rem' }}>✏️</button>
-            <button className="btn-icon btn-danger" onClick={() => onDelete(r.id!)} title="刪除" style={{ fontSize: '0.75rem' }}>🗑️</button>
-          </div>
+          {!readOnly && (
+            <div style={{ display: 'flex', gap: 'var(--sp-xs)', flexShrink: 0 }}>
+              <button className="btn-icon btn-secondary" onClick={() => setEditing(true)} title="編輯" style={{ fontSize: '0.75rem' }}>✏️</button>
+              <button className="btn-icon btn-danger" onClick={() => onDelete(r.id!)} title="刪除" style={{ fontSize: '0.75rem' }}>🗑️</button>
+            </div>
+          )}
         </div>
       )}
     </div>

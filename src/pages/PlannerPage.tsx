@@ -28,18 +28,37 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useAuth } from '../context/AuthContext';
+import { refreshTripFromCloud } from '../db/sync';
 
 const NUM_EMOJIS = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
 function numEmoji(i: number) { return NUM_EMOJIS[i] ?? `${i + 1}`; }
 
 interface PlannerPageProps {
   tripId: number;
+  readOnly?: boolean;
 }
 
 // Special dayId for unassigned places (pool / 待排)
 const POOL_DAY_ID = 0;
 
-export default function PlannerPage({ tripId }: PlannerPageProps) {
+export default function PlannerPage({ tripId, readOnly = false }: PlannerPageProps) {
+  const { role, user, activeTripId: firestoreTripId } = useAuth();
+
+  // Ensure collaborators always see the latest cloud planner data
+  // Collaborators：每次進入時抓一次雲端最新資料；避免覆蓋管理者本地未上傳的變更
+  useEffect(() => {
+    if (role !== 'member') return;
+    if (!user || !firestoreTripId) return;
+    refreshTripFromCloud(tripId, firestoreTripId, user.email ?? undefined, false).catch((err) =>
+      console.warn('Failed to refresh trip from cloud:', err)
+    );
+  }, [role, user, tripId, firestoreTripId]);
+
+  if (readOnly) {
+    return <ReadOnlyPlanner tripId={tripId} />;
+  }
+
   const days = useLiveQuery(
     () => db.days.where('tripId').equals(tripId).sortBy('sortOrder'),
     [tripId]
@@ -87,7 +106,7 @@ export default function PlannerPage({ tripId }: PlannerPageProps) {
     <div>
       <div className="page-header">
         <h1>每日行程 🗓️</h1>
-        <button className="btn btn-primary" onClick={addDay}>＋ 新增天數</button>
+        {!readOnly && <button className="btn btn-primary" onClick={addDay}>＋ 新增天數</button>}
       </div>
 
       {/* Day chips */}
@@ -133,6 +152,74 @@ export default function PlannerPage({ tripId }: PlannerPageProps) {
           <p style={{ fontSize: '3rem' }}>📅</p>
           <p>還沒有天數，新增天數開始規劃吧！</p>
         </div>
+      )}
+    </div>
+  );
+}
+
+function ReadOnlyPlanner({ tripId }: { tripId: number }) {
+  const days = useLiveQuery(
+    () => db.days.where('tripId').equals(tripId).sortBy('sortOrder'),
+    [tripId]
+  );
+  const poolPlaces = useLiveQuery(
+    () => db.places.where('dayId').equals(POOL_DAY_ID).filter(p => p.tripId === tripId).sortBy('sortOrder'),
+    [tripId]
+  );
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>行程（只讀）</h1>
+      </div>
+
+      <div className="chip-bar">
+        <span className="chip active">🧺 未分配 ({poolPlaces?.length ?? 0})</span>
+        {days?.map((day, idx) => (
+          <span key={day.id} className="chip">
+            {numEmoji(idx)} {day.date || '未設定日期'}
+          </span>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gap: 'var(--sp-md)', marginTop: 'var(--sp-md)' }}>
+        {poolPlaces && poolPlaces.length > 0 && (
+          <div className="card">
+            <h3 style={{ marginBottom: 'var(--sp-sm)' }}>未分配</h3>
+            <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+              {poolPlaces.map(p => (
+                <li key={p.id}>{p.name || '未命名地點'}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {days?.map((day, idx) => (
+          <ReadOnlyDay key={day.id} day={day} idx={idx} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReadOnlyDay({ day, idx }: { day: Day; idx: number }) {
+  const places = useLiveQuery(
+    () => db.places.where('dayId').equals(day.id!).sortBy('sortOrder'),
+    [day.id]
+  );
+  return (
+    <div className="card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 style={{ margin: 0 }}>{numEmoji(idx)} {day.date || '未設定日期'}</h3>
+      </div>
+      {places && places.length > 0 ? (
+        <ol style={{ marginTop: 'var(--sp-sm)', paddingLeft: '1.2rem' }}>
+          {places.map(p => (
+            <li key={p.id}>{p.name || '未命名地點'}</li>
+          ))}
+        </ol>
+      ) : (
+        <p style={{ color: 'var(--text-muted)', marginTop: 'var(--sp-sm)' }}>尚無地點</p>
       )}
     </div>
   );

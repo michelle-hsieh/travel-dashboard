@@ -1,9 +1,17 @@
 export interface Trip {
   id?: number;
+  firebaseId?: string;
   name: string;
   startDate: string;
   endDate: string;
   createdAt: number;
+  adminUid?: string;
+  adminEmail?: string;
+  collaborators?: Record<string, Collaborator>;
+  collaboratorEmails?: string[];
+  memberEmails?: string[];
+  daysCount?: number;
+  placesCount?: number;
 }
 
 export interface Day {
@@ -125,3 +133,24 @@ export interface Resource {
 }
 
 export type ParentType = 'place' | 'flight' | 'hotel' | 'ticket';
+
+/* ===================== Auth & Permissions ===================== */
+
+export type Role = 'admin' | 'member' | 'guest';
+
+export type PermissionLevel = 'none' | 'read' | 'write';
+
+export type PermissionTab = 'planner' | 'flights' | 'hotels' | 'tickets' | 'resources';
+
+export type TabPermissions = Record<PermissionTab, PermissionLevel>;
+
+export interface Collaborator {
+  email: string;
+  permissions: TabPermissions;
+}
+
+export interface TripMeta {
+  adminUid: string;
+  adminEmail: string;
+  collaborators: Record<string, Collaborator>; // keyed by sanitized email
+}

@@ -625,6 +625,9 @@ input:focus, textarea:focus, select:focus {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 /* ========== Scrollbar ========== */
 ::-webkit-scrollbar {
@@ -831,5 +834,53 @@ input:focus, textarea:focus, select:focus {
   font-size: 1.5rem;
   font-weight: 700;
   word-break: break-all;
+}
+
+/* ===================== Auth ===================== */
+.auth-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-sm);
+  padding: var(--sp-xs) var(--sp-md);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  min-height: 40px;
+}
+.auth-user {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  font-size: 0.82rem;
+}
+.auth-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+.auth-name {
+  color: var(--text-secondary);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.auth-login-btn {
+  font-size: 0.8rem !important;
+  padding: 4px 12px !important;
+}
+.auth-logout-btn {
+  font-size: 0.75rem !important;
+  padding: 2px 8px !important;
+}
+.auth-role-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-weight: 600;
 }
 
