@@ -7,7 +7,6 @@ export function normalizeEmail(email: string): string {
   return `${localNoPlus}@${domain}`;
 }
 
-export function collaboratorKey(email: string): string {
-  // Replace dots with underscores to stay compatible with existing data and rules fallback.
-  return normalizeEmail(email).replace(/\./g, '_');
+export function collaboratorKey(email: string) {
+  return normalizeEmail(email);
 }

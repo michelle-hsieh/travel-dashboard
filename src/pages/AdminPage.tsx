@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { firestore } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { PermissionLevel, PermissionTab, TabPermissions, Collaborator } from '../types';
 import { normalizeEmail, collaboratorKey } from '../utils/emails';
+import { db } from '../db/database'; // ✅ 新增引入本地 Dexie DB
 
 const TAB_LABELS: Record<PermissionTab, string> = {
   planner: '行程',
@@ -18,7 +19,6 @@ const PERMISSION_OPTIONS: { value: PermissionLevel; label: string }[] = [
   { value: 'read', label: '可讀' },
   { value: 'write', label: '讀寫' },
 ];
-
 
 export default function AdminPage({ tripId }: { tripId: string }) {
   const { role, tripMeta, user } = useAuth();
@@ -52,26 +52,32 @@ export default function AdminPage({ tripId }: { tripId: string }) {
     setMessage('');
     try {
       const key = collaboratorKey(email);
-      const legacyKey = email.toLowerCase().replace(/\./g, '_'); // clean up old entry if exists
+      // 向下相容：清理舊版帶底線的 Key
+      const legacyKey = email.toLowerCase().split('.').join('_');
       const tripRef = doc(firestore, 'trips', tripId);
       const snap = await getDoc(tripRef);
       const existing = snap.exists() ? snap.data() : {};
-      const collabs = existing.collaborators ?? {};
+
+      // 複製一份現有的 collaborators
+      const collabs = { ...(existing.collaborators ?? {}) };
+
+      // 新增或更新權限
       collabs[key] = { email: normalizeEmail(email), permissions };
-      if (legacyKey !== key && collabs[legacyKey]) delete collabs[legacyKey];
+
+      // 如果存在舊版的 key，順手清掉
+      if (legacyKey !== key && collabs[legacyKey]) {
+        delete collabs[legacyKey];
+      }
+
       const collaboratorEmails = Object.values(collabs).map((c: any) => normalizeEmail((c as Collaborator).email));
-      await setDoc(
-        tripRef,
-        {
-          ...existing,
-          collaborators: collabs,
-          memberEmails: collaboratorEmails,
-          collaboratorEmails,
-          adminUid: user?.uid ?? existing.adminUid,
-          adminEmail: user?.email?.toLowerCase() ?? existing.adminEmail,
-        },
-        { merge: true }
-      );
+
+      // 1. 上傳到雲端
+      await updateDoc(tripRef, {
+        collaborators: collabs,
+        memberEmails: collaboratorEmails,
+        collaboratorEmails: collaboratorEmails
+      });
+
       setMessage(`已更新 ${email} 的權限`);
     } catch (err) {
       console.error('Failed to save collaborator:', err);
@@ -88,21 +94,22 @@ export default function AdminPage({ tripId }: { tripId: string }) {
       const snap = await getDoc(tripRef);
       if (snap.exists()) {
         const data = snap.data();
-        const collabs = { ...data.collaborators };
+
+        // 複製一份現有的 collaborators
+        const collabs = { ...(data.collaborators ?? {}) };
+
+        // 在本地端徹底刪除它
         delete collabs[key];
+
         const collaboratorEmails = Object.values(collabs).map((c: any) => normalizeEmail((c as Collaborator).email));
-        await setDoc(
-          tripRef,
-          {
-            ...data,
-            collaborators: collabs,
-            memberEmails: collaboratorEmails,
-            collaboratorEmails,
-            adminUid: user?.uid ?? data.adminUid,
-            adminEmail: user?.email?.toLowerCase() ?? data.adminEmail,
-          },
-          { merge: true }
-        );
+
+        // 1. 上傳到雲端
+        await updateDoc(tripRef, {
+          collaborators: collabs,
+          memberEmails: collaboratorEmails,
+          collaboratorEmails: collaboratorEmails
+        });
+
         setMessage('已移除協作者');
       }
     } catch (err) {

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 
 // TODO: Replace with your Firebase project config
 const firebaseConfig = {
@@ -16,3 +16,12 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const firestore = getFirestore(app);
+
+// 開啟 Firestore 原生離線快取 (Offline Persistence)
+enableIndexedDbPersistence(firestore).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.warn('離線快取啟用失敗：可能有多個分頁同時開啟此 App。');
+  } else if (err.code === 'unimplemented') {
+    console.warn('離線快取啟用失敗：瀏覽器不支援此功能。');
+  }
+});

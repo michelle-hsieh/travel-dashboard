@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/database';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { firestore } from '../firebase';
 import InlineEdit from '../components/shared/InlineEdit';
 import FileUpload from '../components/shared/FileUpload';
 import AttachmentList from '../components/shared/AttachmentList';
 import PlaceAutocomplete from '../components/shared/PlaceAutocomplete';
 import { parseFlightPdf } from '../utils/parseFlightPdf';
-import type { Flight, Hotel, Ticket, ChecklistItem, BudgetItem, Role } from '../types';
+import type { Flight, Hotel, Ticket, ChecklistItem, BudgetItem, Role, PermissionTab, Place } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { normalizeEmail } from '../utils/emails';
+import { useFirestoreQuery } from '../hooks/useFirestoreQuery';
 
 interface LogisticsPageProps {
-  tripId: number;
+  tripId: string; // ✅ 改為 string
   role: Role;
   readOnly?: boolean;
 }
@@ -17,8 +20,12 @@ interface LogisticsPageProps {
 type LogisticsTab = 'flights' | 'hotels' | 'tickets' | 'checklist' | 'budget';
 
 export default function LogisticsPage({ tripId, role, readOnly = false }: LogisticsPageProps) {
+  const { user, tripMeta } = useAuth();
   const isAdmin = role === 'admin';
-  const [activeTab, setActiveTab] = useState<LogisticsTab>('flights');
+  const myEmail = user?.email ? normalizeEmail(user.email) : '';
+  const collabs = tripMeta?.collaborators || {};
+  const myCollab = collabs[myEmail] || Object.values(collabs).find((c: any) => normalizeEmail(c.email) === myEmail);
+  const perms = myCollab?.permissions || {};
 
   const allTabs: { key: LogisticsTab; label: string; icon: string }[] = [
     { key: 'flights', label: '機票', icon: '✈️' },
@@ -28,8 +35,30 @@ export default function LogisticsPage({ tripId, role, readOnly = false }: Logist
     { key: 'budget', label: '預算', icon: '💰' },
   ];
 
-  // Non-admin: hide checklist tab entirely
-  const tabs = isAdmin ? allTabs : allTabs.filter(t => t.key !== 'checklist');
+  const tabs = allTabs.filter(t => {
+    if (isAdmin) return true;
+    if (t.key === 'checklist') return false;
+    if (t.key === 'budget') return true;
+    return perms[t.key as PermissionTab] && perms[t.key as PermissionTab] !== 'none';
+  });
+
+  const initialTab = tabs.length > 0 ? tabs[0].key : null;
+  const [activeTab, setActiveTab] = useState<LogisticsTab | null>(initialTab);
+
+  useEffect(() => {
+    if (tabs.length > 0 && (!activeTab || !tabs.find(t => t.key === activeTab))) {
+      setActiveTab(tabs[0].key);
+    }
+  }, [tabs, activeTab]);
+
+  if (tabs.length === 0) {
+    return (
+      <div className="empty-state">
+        <p style={{ fontSize: '3rem' }}>🚫</p>
+        <p>您沒有權限檢視此頁面的任何內容</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -61,19 +90,16 @@ export default function LogisticsPage({ tripId, role, readOnly = false }: Logist
 }
 
 /* ===================== FLIGHTS ===================== */
-function FlightsSection({ tripId, readOnly = false }: { tripId: number; readOnly?: boolean }) {
-  const flights = useLiveQuery(
-    () => db.flights.where('tripId').equals(tripId).sortBy('sortOrder'),
-    [tripId]
-  );
+function FlightsSection({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
+  const flights = useFirestoreQuery<Flight>(tripId, 'flights', 'sortOrder');
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [parsing, setParsing] = useState(false);
   const [parseMsg, setParseMsg] = useState('');
 
   const addFlight = async () => {
-    if (readOnly) return;
-    await db.flights.add({
-      tripId,
+    if (readOnly || !tripId) return;
+    await addDoc(collection(firestore, 'trips', String(tripId), 'flights'), {
+      tripId: String(tripId),
       airline: '',
       flightNo: '',
       departureTime: '',
@@ -98,8 +124,8 @@ function FlightsSection({ tripId, readOnly = false }: { tripId: number; readOnly
         const base = flights?.length ?? 0;
         for (let i = 0; i < parsed.length; i++) {
           const p = parsed[i];
-          await db.flights.add({
-            tripId,
+          await addDoc(collection(firestore, 'trips', String(tripId), 'flights'), {
+            tripId: String(tripId),
             airline: p.airline,
             flightNo: p.flightNo,
             departureAirport: p.departureAirport,
@@ -122,39 +148,24 @@ function FlightsSection({ tripId, readOnly = false }: { tripId: number; readOnly
     }
   };
 
-  const update = (id: number, data: Partial<Flight>) => {
-    if (readOnly) return;
-    return db.flights.update(id, data);
+  const update = async (id: string, data: Partial<Flight>) => {
+    if (readOnly || !tripId || !id) return;
+    await updateDoc(doc(firestore, 'trips', String(tripId), 'flights', String(id)), data);
   };
-  const remove = async (id: number) => {
-    if (readOnly) return;
-    await db.attachments.filter(a => a.parentType === 'flight' && a.parentId === id).delete();
-    await db.flights.delete(id);
+  const remove = async (id: string) => {
+    if (readOnly || !tripId || !id) return;
+    await deleteDoc(doc(firestore, 'trips', String(tripId), 'flights', String(id)));
   };
 
   return (
     <div>
-      {/* PDF import */}
       <div className="card" style={{ marginBottom: 'var(--sp-md)', padding: 'var(--sp-sm) var(--sp-md)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)', flexWrap: 'wrap' }}>
-          <input
-            ref={pdfInputRef}
-            type="file"
-            accept=".pdf"
-            style={{ display: 'none' }}
-            onChange={handlePdfUpload}
-          />
-          <button
-            className="btn btn-secondary"
-            onClick={() => pdfInputRef.current?.click()}
-            disabled={parsing}
-            style={{ fontSize: '0.85rem' }}
-          >
+          <input ref={pdfInputRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={handlePdfUpload} />
+          <button className="btn btn-secondary" onClick={() => pdfInputRef.current?.click()} disabled={parsing} style={{ fontSize: '0.85rem' }}>
             {parsing ? '⏳ 解析中...' : '📄 匯入機票 PDF'}
           </button>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            上傳機票確認信 PDF，自動填入航班資訊
-          </span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>上傳機票確認信 PDF，自動填入航班資訊</span>
         </div>
         {parseMsg && (
           <div style={{ marginTop: 'var(--sp-xs)', fontSize: '0.82rem', color: parseMsg.includes('失敗') || parseMsg.includes('未能') ? 'var(--danger)' : 'var(--success)' }}>
@@ -188,10 +199,6 @@ function FlightsSection({ tripId, readOnly = false }: { tripId: number; readOnly
                 <InlineEdit value={f.amount != null ? `${f.amount}` : ''} onSave={v => update(f.id!, { amount: parseFloat(v) || undefined })} placeholder="💰 金額" />
                 <InlineEdit value={f.currency || ''} onSave={v => update(f.id!, { currency: v })} placeholder="幣別" />
               </div>
-              <AttachmentList parentId={f.id!} parentType="flight" />
-              <div style={{ marginTop: 'var(--sp-sm)' }}>
-                <FileUpload parentId={f.id!} parentType="flight" />
-              </div>
             </div>
             <button className="btn-icon btn-danger" onClick={() => remove(f.id!)}>🗑️</button>
           </div>
@@ -203,16 +210,13 @@ function FlightsSection({ tripId, readOnly = false }: { tripId: number; readOnly
 }
 
 /* ===================== HOTELS ===================== */
-function HotelsSection({ tripId, readOnly = false }: { tripId: number; readOnly?: boolean }) {
-  const hotels = useLiveQuery(
-    () => db.hotels.where('tripId').equals(tripId).sortBy('sortOrder'),
-    [tripId]
-  );
+function HotelsSection({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
+  const hotels = useFirestoreQuery<Hotel>(tripId, 'hotels', 'sortOrder');
 
   const addHotel = async () => {
-    if (readOnly) return;
-    await db.hotels.add({
-      tripId,
+    if (readOnly || !tripId) return;
+    await addDoc(collection(firestore, 'trips', String(tripId), 'hotels'), {
+      tripId: String(tripId),
       name: '',
       address: '',
       checkIn: '',
@@ -221,14 +225,13 @@ function HotelsSection({ tripId, readOnly = false }: { tripId: number; readOnly?
     });
   };
 
-  const update = (id: number, data: Partial<Hotel>) => {
-    if (readOnly) return;
-    return db.hotels.update(id, data);
+  const update = async (id: string, data: Partial<Hotel>) => {
+    if (readOnly || !tripId || !id) return;
+    await updateDoc(doc(firestore, 'trips', String(tripId), 'hotels', String(id)), data);
   };
-  const remove = async (id: number) => {
-    if (readOnly) return;
-    await db.attachments.filter(a => a.parentType === 'hotel' && a.parentId === id).delete();
-    await db.hotels.delete(id);
+  const remove = async (id: string) => {
+    if (readOnly || !tripId || !id) return;
+    await deleteDoc(doc(firestore, 'trips', String(tripId), 'hotels', String(id)));
   };
 
   return (
@@ -251,37 +254,20 @@ function HotelCard({ hotel, onUpdate, onRemove }: { hotel: Hotel; onUpdate: (dat
             onSelect={(r) => onUpdate({ name: r.name, address: r.address, lat: r.lat, lng: r.lng, placeLink: r.placeLink })}
             placeholder="搜尋住宿..."
           />
-          {hotel.address && (
-            <div style={{ fontSize: '0.85rem', marginTop: 'var(--sp-xs)', color: 'var(--text-muted)' }}>
-              📍 {hotel.address}
-            </div>
-          )}
+          {hotel.address && <div style={{ fontSize: '0.85rem', marginTop: 'var(--sp-xs)', color: 'var(--text-muted)' }}>📍 {hotel.address}</div>}
           {hotel.placeLink && (
             <div style={{ fontSize: '0.8rem' }}>
-              <a href={hotel.placeLink} target="_blank" rel="noopener noreferrer"
-                style={{ color: 'var(--accent-light)' }}>
-                🔗 在 Google Maps 查看
-              </a>
+              <a href={hotel.placeLink} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-light)' }}>🔗 在 Google Maps 查看</a>
             </div>
           )}
           <div className="form-row" style={{ fontSize: '0.85rem', marginTop: 'var(--sp-xs)' }}>
-            <div>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>入住</span>
-              <InlineEdit value={hotel.checkIn} onSave={v => onUpdate({ checkIn: v })} placeholder="日期" />
-            </div>
-            <div>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>退房</span>
-              <InlineEdit value={hotel.checkOut} onSave={v => onUpdate({ checkOut: v })} placeholder="日期" />
-            </div>
+            <div><span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>入住</span><InlineEdit value={hotel.checkIn} onSave={v => onUpdate({ checkIn: v })} placeholder="日期" /></div>
+            <div><span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>退房</span><InlineEdit value={hotel.checkOut} onSave={v => onUpdate({ checkOut: v })} placeholder="日期" /></div>
           </div>
           <div className="form-row" style={{ fontSize: '0.85rem' }}>
             <InlineEdit value={hotel.confirmNo || ''} onSave={v => onUpdate({ confirmNo: v })} placeholder="確認編號" />
             <InlineEdit value={hotel.amount != null ? `${hotel.amount}` : ''} onSave={v => onUpdate({ amount: parseFloat(v) || undefined })} placeholder="💰 金額" />
             <InlineEdit value={hotel.currency || ''} onSave={v => onUpdate({ currency: v })} placeholder="幣別" />
-          </div>
-          <AttachmentList parentId={hotel.id!} parentType="hotel" />
-          <div style={{ marginTop: 'var(--sp-sm)' }}>
-            <FileUpload parentId={hotel.id!} parentType="hotel" />
           </div>
         </div>
         <button className="btn-icon btn-danger" onClick={onRemove}>🗑️</button>
@@ -291,29 +277,25 @@ function HotelCard({ hotel, onUpdate, onRemove }: { hotel: Hotel; onUpdate: (dat
 }
 
 /* ===================== TICKETS ===================== */
-function TicketsSection({ tripId, readOnly = false }: { tripId: number; readOnly?: boolean }) {
-  const tickets = useLiveQuery(
-    () => db.tickets.where('tripId').equals(tripId).sortBy('sortOrder'),
-    [tripId]
-  );
+function TicketsSection({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
+  const tickets = useFirestoreQuery<Ticket>(tripId, 'tickets', 'sortOrder');
 
   const addTicket = async () => {
-    if (readOnly) return;
-    await db.tickets.add({
-      tripId,
+    if (readOnly || !tripId) return;
+    await addDoc(collection(firestore, 'trips', String(tripId), 'tickets'), {
+      tripId: String(tripId),
       title: '',
       sortOrder: tickets?.length ?? 0,
     });
   };
 
-  const update = (id: number, data: Partial<Ticket>) => {
-    if (readOnly) return;
-    return db.tickets.update(id, data);
+  const update = async (id: string, data: Partial<Ticket>) => {
+    if (readOnly || !tripId || !id) return;
+    await updateDoc(doc(firestore, 'trips', String(tripId), 'tickets', String(id)), data);
   };
-  const remove = async (id: number) => {
-    if (readOnly) return;
-    await db.attachments.filter(a => a.parentType === 'ticket' && a.parentId === id).delete();
-    await db.tickets.delete(id);
+  const remove = async (id: string) => {
+    if (readOnly || !tripId || !id) return;
+    await deleteDoc(doc(firestore, 'trips', String(tripId), 'tickets', String(id)));
   };
 
   return (
@@ -332,10 +314,6 @@ function TicketsSection({ tripId, readOnly = false }: { tripId: number; readOnly
                 <InlineEdit value={t.amount != null ? `${t.amount}` : ''} onSave={v => update(t.id!, { amount: parseFloat(v) || undefined })} placeholder="💰 金額" />
                 <InlineEdit value={t.currency || ''} onSave={v => update(t.id!, { currency: v })} placeholder="幣別" />
               </div>
-              <AttachmentList parentId={t.id!} parentType="ticket" />
-              <div style={{ marginTop: 'var(--sp-sm)' }}>
-                <FileUpload parentId={t.id!} parentType="ticket" />
-              </div>
             </div>
             <button className="btn-icon btn-danger" onClick={() => remove(t.id!)}>🗑️</button>
           </div>
@@ -347,21 +325,18 @@ function TicketsSection({ tripId, readOnly = false }: { tripId: number; readOnly
 }
 
 /* ===================== CHECKLIST ===================== */
-function ChecklistSection({ tripId, readOnly = false }: { tripId: number; readOnly?: boolean }) {
-  const items = useLiveQuery(
-    () => db.checklistItems.where('tripId').equals(tripId).sortBy('sortOrder'),
-    [tripId]
-  );
+function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
+  const items = useFirestoreQuery<ChecklistItem>(tripId, 'checklistItems', 'sortOrder');
   const [newCategory, setNewCategory] = useState('行前準備');
 
   const categories = [...new Set(items?.map(i => i.category) ?? [])];
   if (categories.length === 0) categories.push('行前準備', '伴手禮');
 
   const addItem = async (category: string) => {
-    if (readOnly) return;
+    if (readOnly || !tripId) return;
     const catItems = items?.filter(i => i.category === category) ?? [];
-    await db.checklistItems.add({
-      tripId,
+    await addDoc(collection(firestore, 'trips', String(tripId), 'checklistItems'), {
+      tripId: String(tripId),
       category,
       text: '',
       checked: false,
@@ -370,13 +345,13 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: number; readOn
     });
   };
 
-  const update = (id: number, data: Partial<ChecklistItem>) => {
-    if (readOnly) return;
-    return db.checklistItems.update(id, data);
+  const update = async (id: string, data: Partial<ChecklistItem>) => {
+    if (readOnly || !tripId || !id) return;
+    await updateDoc(doc(firestore, 'trips', String(tripId), 'checklistItems', String(id)), data);
   };
-  const remove = (id: number) => {
-    if (readOnly) return;
-    return db.checklistItems.delete(id);
+  const remove = async (id: string) => {
+    if (readOnly || !tripId || !id) return;
+    await deleteDoc(doc(firestore, 'trips', String(tripId), 'checklistItems', String(id)));
   };
 
   return (
@@ -391,54 +366,20 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: number; readOn
             </div>
             {catItems.map(item => (
               <div key={item.id} className={`checklist-item ${item.checked ? 'checked' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={item.checked}
-                  onChange={e => update(item.id!, { checked: e.target.checked })}
-                />
-                <InlineEdit
-                  value={item.text}
-                  onSave={v => update(item.id!, { text: v })}
-                  placeholder="項目..."
-                  className="checklist-text"
-                />
-                <InlineEdit
-                  value={item.amount != null ? `${item.amount}` : ''}
-                  onSave={v => update(item.id!, { amount: v ? parseFloat(v) || 0 : undefined })}
-                  placeholder="金額"
-                  className="checklist-amount"
-                />
-                <InlineEdit
-                  value={item.currency || 'TWD'}
-                  onSave={v => update(item.id!, { currency: v })}
-                  placeholder="TWD"
-                  className="checklist-currency"
-                />
+                <input type="checkbox" checked={item.checked} onChange={e => update(item.id!, { checked: e.target.checked })} />
+                <InlineEdit value={item.text} onSave={v => update(item.id!, { text: v })} placeholder="項目..." className="checklist-text" />
+                <InlineEdit value={item.amount != null ? `${item.amount}` : ''} onSave={v => update(item.id!, { amount: v ? parseFloat(v) || 0 : undefined })} placeholder="金額" className="checklist-amount" />
+                <InlineEdit value={item.currency || 'TWD'} onSave={v => update(item.id!, { currency: v })} placeholder="TWD" className="checklist-currency" />
                 <button className="btn-icon" style={{ fontSize: '0.65rem', width: 20, height: 20, color: 'var(--text-muted)' }} onClick={() => remove(item.id!)}>✕</button>
               </div>
             ))}
-            {(() => {
-              const subtotals: Record<string, number> = {};
-              catItems.forEach(i => { if (i.amount) { const c = i.currency || 'TWD'; subtotals[c] = (subtotals[c] || 0) + i.amount; } });
-              const entries = Object.entries(subtotals);
-              return entries.length > 0 ? (
-                <div style={{ textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 'var(--sp-xs)' }}>
-                  小計: {entries.map(([cur, amt]) => `${cur} ${amt.toLocaleString()}`).join(' ＋ ')}
-                </div>
-              ) : null;
-            })()}
             <button className="btn btn-secondary" onClick={() => addItem(cat)} style={{ marginTop: 'var(--sp-xs)', fontSize: '0.8rem' }}>＋ 新增項目</button>
           </div>
         );
       })}
 
       <div style={{ display: 'flex', gap: 'var(--sp-sm)', alignItems: 'center', marginTop: 'var(--sp-md)' }}>
-        <input
-          value={newCategory}
-          onChange={e => setNewCategory(e.target.value)}
-          placeholder="新類別名稱"
-          style={{ maxWidth: 200 }}
-        />
+        <input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="新類別名稱" style={{ maxWidth: 200 }} />
         <button className="btn btn-primary" onClick={() => { if (newCategory.trim()) { addItem(newCategory.trim()); } }}>
           ＋ 新增類別
         </button>
@@ -448,23 +389,18 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: number; readOn
 }
 
 /* ===================== BUDGET ===================== */
-function BudgetSection({ tripId, isAdmin, readOnly = false }: { tripId: number; isAdmin: boolean; readOnly?: boolean }) {
-  const budgetItems = useLiveQuery(
-    () => db.budgetItems.where('tripId').equals(tripId).sortBy('sortOrder'),
-    [tripId]
-  );
-
-  // Also gather costs from flights, hotels, tickets, places
-  const flights = useLiveQuery(() => db.flights.where('tripId').equals(tripId).toArray(), [tripId]);
-  const hotels = useLiveQuery(() => db.hotels.where('tripId').equals(tripId).toArray(), [tripId]);
-  const tickets = useLiveQuery(() => db.tickets.where('tripId').equals(tripId).toArray(), [tripId]);
-  const places = useLiveQuery(() => db.places.where('tripId').equals(tripId).toArray(), [tripId]);
-  const checklistItems = useLiveQuery(() => db.checklistItems.where('tripId').equals(tripId).toArray(), [tripId]);
+function BudgetSection({ tripId, isAdmin, readOnly = false }: { tripId: string; isAdmin: boolean; readOnly?: boolean }) {
+  const budgetItems = useFirestoreQuery<BudgetItem>(tripId, 'budgetItems', 'sortOrder');
+  const flights = useFirestoreQuery<Flight>(tripId, 'flights');
+  const hotels = useFirestoreQuery<Hotel>(tripId, 'hotels');
+  const tickets = useFirestoreQuery<Ticket>(tripId, 'tickets');
+  const places = useFirestoreQuery<Place>(tripId, 'places');
+  const checklistItems = useFirestoreQuery<ChecklistItem>(tripId, 'checklistItems');
 
   const addItem = async () => {
-    if (readOnly) return;
-    await db.budgetItems.add({
-      tripId,
+    if (readOnly || !tripId) return;
+    await addDoc(collection(firestore, 'trips', String(tripId), 'budgetItems'), {
+      tripId: String(tripId),
       category: '',
       description: '',
       amount: 0,
@@ -473,130 +409,68 @@ function BudgetSection({ tripId, isAdmin, readOnly = false }: { tripId: number; 
     });
   };
 
-  const update = (id: number, data: Partial<BudgetItem>) => {
-    if (readOnly) return;
-    return db.budgetItems.update(id, data);
+  const update = async (id: string, data: Partial<BudgetItem>) => {
+    if (readOnly || !tripId || !id) return;
+    await updateDoc(doc(firestore, 'trips', String(tripId), 'budgetItems', String(id)), data);
   };
-  const remove = (id: number) => {
-    if (readOnly) return;
-    return db.budgetItems.delete(id);
-  };
-
-  // Approximate exchange rates to TWD fallback
-  const fallbackToTWD: Record<string, number> = {
-    TWD: 1,
-    JPY: 0.22,
-    USD: 32.5,
-    EUR: 35,
-    KRW: 0.024,
-    CNY: 4.5,
-    HKD: 4.15,
-    GBP: 41,
-    THB: 0.92,
+  const remove = async (id: string) => {
+    if (readOnly || !tripId || !id) return;
+    await deleteDoc(doc(firestore, 'trips', String(tripId), 'budgetItems', String(id)));
   };
 
+  const fallbackToTWD: Record<string, number> = { TWD: 1, JPY: 0.22, USD: 32.5, EUR: 35 };
   const [exchangeRates, setExchangeRates] = useState<Record<string, number> | null>(null);
 
   useEffect(() => {
     if (navigator.onLine) {
       fetch('https://open.er-api.com/v6/latest/TWD')
         .then(res => res.json())
-        .then(data => {
-          if (data && data.rates) {
-            setExchangeRates(data.rates);
-          }
-        })
-        .catch(err => console.error('Failed to fetch exchange rates:', err));
+        .then(data => { if (data && data.rates) setExchangeRates(data.rates); })
+        .catch(() => { });
     }
   }, []);
 
   const convertToTWD = (amount: number, currency: string) => {
-    if (exchangeRates && exchangeRates[currency]) {
-      // 1 TWD = exchangeRates[currency] (e.g., 4.97 JPY)
-      return Math.round(amount / exchangeRates[currency]);
-    }
+    if (exchangeRates && exchangeRates[currency]) return Math.round(amount / exchangeRates[currency]);
     const rate = fallbackToTWD[currency];
     return rate ? Math.round(amount * rate) : null;
   };
 
-  // Calculate totals by currency
   const allCosts: { amount: number; currency: string; source: string }[] = [];
   budgetItems?.forEach(b => { if (b.amount) allCosts.push({ amount: b.amount, currency: b.currency, source: '預算' }); });
   flights?.forEach(f => { if (f.amount) allCosts.push({ amount: f.amount, currency: f.currency || 'TWD', source: '機票' }); });
   hotels?.forEach(h => { if (h.amount) allCosts.push({ amount: h.amount, currency: h.currency || 'TWD', source: '住宿' }); });
   tickets?.forEach(t => { if (t.amount) allCosts.push({ amount: t.amount, currency: t.currency || 'TWD', source: '票券' }); });
   places?.forEach(p => { if (p.amount) allCosts.push({ amount: p.amount, currency: p.currency || 'JPY', source: '景點' }); });
-  // Only include checklist costs for admin — prevent leaking hidden amounts
+
   if (isAdmin) {
     checklistItems?.forEach(c => { if (c.amount) allCosts.push({ amount: c.amount, currency: c.currency || 'TWD', source: '清單' }); });
   }
 
   const totalsByCurrency: Record<string, number> = {};
-  allCosts.forEach(c => {
-    totalsByCurrency[c.currency] = (totalsByCurrency[c.currency] || 0) + c.amount;
-  });
-
-  // Total converted to TWD
   let totalTWD = 0;
   allCosts.forEach(c => {
+    totalsByCurrency[c.currency] = (totalsByCurrency[c.currency] || 0) + c.amount;
     const twd = convertToTWD(c.amount, c.currency);
     if (twd != null) totalTWD += twd;
   });
 
   return (
     <div>
-      {/* Summary */}
       <div className="budget-summary">
         <div>
           <div className="total-label">總花費</div>
-          <div className="total-amount">
-            {totalTWD > 0
-              ? `TWD ${totalTWD.toLocaleString()}`
-              : '—'}
-          </div>
-          {Object.keys(totalsByCurrency).length > 1 && (
-            <div style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: 4 }}>
-              {Object.entries(totalsByCurrency).map(([cur, amt]) => `${cur} ${amt.toLocaleString()}`).join(' ＋ ')}
-            </div>
-          )}
+          <div className="total-amount">{totalTWD > 0 ? `TWD ${totalTWD.toLocaleString()}` : '—'}</div>
         </div>
       </div>
 
-      {/* Cost sources overview */}
-      {allCosts.length > 0 && (
-        <div className="card" style={{ marginBottom: 'var(--sp-md)', fontSize: '0.85rem' }}>
-          <div className="section-title">費用明細</div>
-          {['機票', '住宿', '票券', '景點', '清單', '預算'].map(source => {
-            const items = allCosts.filter(c => c.source === source);
-            if (items.length === 0) return null;
-            const subtotals: Record<string, number> = {};
-            items.forEach(i => { subtotals[i.currency] = (subtotals[i.currency] || 0) + i.amount; });
-            const twdTotal = items.reduce((sum, i) => sum + (convertToTWD(i.amount, i.currency) ?? 0), 0);
-            return (
-              <div key={source} style={{ display: 'flex', justifyContent: 'space-between', padding: 'var(--sp-xs) 0', borderBottom: '1px solid var(--border)' }}>
-                <span>{source}</span>
-                <span style={{ color: 'var(--accent-light)' }}>
-                  {Object.entries(subtotals).map(([c, a]) => `${c} ${a.toLocaleString()}`).join(' + ')}
-                  {twdTotal > 0 && Object.keys(subtotals).some(c => c !== 'TWD') ? ` ≈ TWD ${twdTotal.toLocaleString()}` : ''}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Manual budget items */}
       <div className="section-title">自訂預算項目</div>
       {budgetItems?.map(b => (
         <div key={b.id} className="card" style={{ marginBottom: 'var(--sp-sm)' }}>
           <div style={{ display: 'flex', gap: 'var(--sp-sm)', alignItems: 'center' }}>
             <InlineEdit value={b.category} onSave={v => update(b.id!, { category: v })} placeholder="類別" />
             <InlineEdit value={b.description} onSave={v => update(b.id!, { description: v })} placeholder="說明" />
-            <InlineEdit
-              value={`${b.amount}`}
-              onSave={v => update(b.id!, { amount: parseFloat(v) || 0 })}
-              placeholder="0"
-            />
+            <InlineEdit value={`${b.amount}`} onSave={v => update(b.id!, { amount: parseFloat(v) || 0 })} placeholder="0" />
             <InlineEdit value={b.currency} onSave={v => update(b.id!, { currency: v })} placeholder="TWD" />
             <button className="btn-icon btn-danger" style={{ fontSize: '0.7rem' }} onClick={() => remove(b.id!)}>✕</button>
           </div>

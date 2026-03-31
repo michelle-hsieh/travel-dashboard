@@ -6,17 +6,16 @@ import PlannerPage from './pages/PlannerPage';
 import LogisticsPage from './pages/LogisticsPage';
 import ResourcesPage from './pages/ResourcesPage';
 import AdminPage from './pages/AdminPage';
-import { useFirestoreSync } from './hooks/useFirestoreSync';
+// 🚫 拔除：import { useFirestoreSync } from './hooks/useFirestoreSync';
 
 type Page = 'home' | 'planner' | 'logistics' | 'resources' | 'admin';
 
 function AppInner() {
   const [page, setPage] = useState<Page>('home');
-  const [activeTripId, setActiveTripId] = useState<number | null>(null);
+  // ✅ 統一使用 Firestore 字串 ID
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const { role, user, canRead, canWrite, activeTripId: firestoreTripId, setActiveTripId: setAuthTripId } = useAuth();
+  const { role, canRead, canWrite, activeTripId, setActiveTripId } = useAuth();
 
-  // Pre-compute write permissions (never call hooks conditionally)
   const plannerWritable = canWrite('planner');
   const logisticsWritable = canWrite('flights') || canWrite('hotels') || canWrite('tickets');
   const resourcesWritable = canWrite('resources');
@@ -32,20 +31,14 @@ function AppInner() {
     };
   }, []);
 
-  const handleSelectTrip = (tripId: number, firebaseId?: string) => {
-    setActiveTripId(tripId);
-    // Prefer firebaseId for Firestore doc access; fallback to local numeric id
-    setAuthTripId(firebaseId ?? String(tripId));
-    // Guests can only see the trip list, not enter details
+  // ✅ 現在我們只在乎 Firebase 的字串 ID
+  const handleSelectTrip = (firebaseId: string) => {
+    setActiveTripId(firebaseId);
     if (role !== 'guest') {
       setPage('planner');
     }
   };
 
-  // Auto sync: admin uploads; member subscribes
-  useFirestoreSync(activeTripId, firestoreTripId, role, user, setAuthTripId);
-
-  // Build nav items based on role and permissions
   const allNavItems: { key: Page; icon: string; label: string }[] = [
     { key: 'home', icon: '🌍', label: '旅程' },
   ];
@@ -65,7 +58,6 @@ function AppInner() {
     }
   }
 
-  // Reset to home if current page is not accessible
   useEffect(() => {
     const accessible = allNavItems.some((item) => item.key === page);
     if (!accessible) setPage('home');
@@ -73,7 +65,6 @@ function AppInner() {
 
   return (
     <div className="app-container">
-      {/* Top auth bar */}
       <div className="auth-bar">
         <LoginButton />
         {role !== 'guest' && (
@@ -83,9 +74,10 @@ function AppInner() {
         )}
       </div>
 
+      {/* ✅ 在新架構下，離線時依然可以順暢使用 */}
       {isOffline && (
-        <div className="offline-banner">
-          📡 離線中 — 變更已儲存在本機
+        <div className="offline-banner" style={{ background: '#f59e0b' }}>
+          📡 離線中 — 變更將自動保存在本機，並於連線時同步
         </div>
       )}
 
@@ -93,6 +85,7 @@ function AppInner() {
         {page === 'home' && (
           <HomePage onSelectTrip={handleSelectTrip} activeTripId={activeTripId} role={role} />
         )}
+        {/* 注意：這裡的 activeTripId 已經變成字串了 */}
         {page === 'planner' && activeTripId ? (
           <PlannerPage tripId={activeTripId} readOnly={!plannerWritable} />
         ) : page === 'planner' && (
@@ -117,8 +110,8 @@ function AppInner() {
             <p>請先從旅程頁面選擇一趟旅程</p>
           </div>
         )}
-        {page === 'admin' && role === 'admin' && firestoreTripId && (
-          <AdminPage tripId={firestoreTripId} />
+        {page === 'admin' && role === 'admin' && activeTripId && (
+          <AdminPage tripId={activeTripId} />
         )}
       </main>
 

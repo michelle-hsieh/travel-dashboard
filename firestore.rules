@@ -4,40 +4,48 @@ service cloud.firestore {
 
     // Helper: normalize Gmail (remove dots, strip +tag) for robust email match
     function normalizeEmail(email) {
-      let lower = (email + "").lower().trim();
+      let emailStr = (email == null) ? "" : (email + "");
+      let lower = emailStr.lower().trim();
       let parts = lower.split("@");
-      let local = parts.size() > 0 ? parts[0] : "";
-      let domain = parts.size() > 1 ? "@" + parts[1] : "";
+      let local = (parts.size() > 0) ? parts[0] : "";
+      let domain = (parts.size() > 1) ? ("@" + parts[1]) : "";
       let plusIndex = local.indexOf("+");
-      let localNoPlus = plusIndex >= 0 ? local.substring(0, plusIndex) : local;
-      // We no longer remove dots in Rules because rules do not support global replace or join().
+      let localNoPlus = (plusIndex >= 0) ? local.substring(0, plusIndex) : local;
       let normalizedDomain = (domain == "@googlemail.com") ? "@gmail.com" : domain;
       return localNoPlus + normalizedDomain;
     }
 
     function isAdmin(tripId) {
-      let doc = get(/databases/$(database)/documents/trips/$(tripId)).data;
       let authed = request.auth != null;
+      let tripPath = /databases/$(database)/documents/trips/$(tripId);
+      let docExists = exists(tripPath);
+      let doc = docExists ? get(tripPath).data : null;
+      
       let hasEmail = authed && request.auth.token.email != null;
       let userEmail = hasEmail ? normalizeEmail(request.auth.token.email) : "";
-      return authed && (
-        doc.adminUid == request.auth.uid ||
-        (hasEmail && doc.adminEmail != null && normalizeEmail(doc.adminEmail) == userEmail)
+      
+      let adminUid = (doc != null) ? doc.get("adminUid", "") : "";
+      let adminEmail = (doc != null) ? doc.get("adminEmail", "") : "";
+
+      return authed && docExists && (
+        (adminUid == request.auth.uid) ||
+        (hasEmail && adminEmail != "" && normalizeEmail(adminEmail) == userEmail)
       );
     }
 
     function getCollab(tripId) {
-      let doc = get(/databases/$(database)/documents/trips/$(tripId)).data;
+      let tripPath = /databases/$(database)/documents/trips/$(tripId);
+      let docExists = exists(tripPath);
+      let doc = docExists ? get(tripPath).data : null;
+      
       let hasEmail = request.auth != null && request.auth.token.email != null;
       let normalized = hasEmail ? normalizeEmail(request.auth.token.email) : "";
-      let key1 = normalized.replace(".", "_").replace(".", "_").replace(".", "_");
-      let collabs = doc.collaborators;
+      let key1 = normalized.replace("\\.", "_").replace("\\.", "_").replace("\\.", "_");
+      let collabs = (doc != null) ? doc.get("collaborators", {}) : {};
       
-      return (hasEmail && collabs != null) ? (
-        collabs[normalized] != null ? collabs[normalized] :
-        collabs[key1] != null ? collabs[key1] :
-        collabs[normalized.lower()] != null ? collabs[normalized.lower()] : null
-      ) : null;
+      let c1 = collabs.get(normalized, null);
+      let c2 = c1 != null ? c1 : collabs.get(key1, null);
+      return hasEmail ? (c2 != null ? c2 : collabs.get(normalized.lower(), null)) : null;
     }
 
     function isCollaborator(tripId) {
@@ -47,8 +55,8 @@ service cloud.firestore {
     function hasPermission(tripId, tab, level) {
       let collab = getCollab(tripId);
       return collab != null && (
-        collab.permissions[tab] == level
-        || (level == 'read' && collab.permissions[tab] == 'write')
+        collab.get("permissions", {}).get(tab, "none") == level
+        || (level == 'read' && collab.get("permissions", {}).get(tab, "none") == 'write')
       );
     }
 
@@ -59,7 +67,7 @@ service cloud.firestore {
         !exists(/databases/$(database)/documents/trips/$(tripId))
         || isAdmin(tripId)
         || (
-          request.resource.data.adminEmail != null
+          request.resource.data.get("adminEmail", null) != null
           && request.auth.token.email != null
           && normalizeEmail(request.resource.data.adminEmail) == normalizeEmail(request.auth.token.email)
         )

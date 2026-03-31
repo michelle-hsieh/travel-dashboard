@@ -1,6 +1,7 @@
+// types/index.ts
 export interface Trip {
-  id?: number;
-  firebaseId?: string;
+  id?: string; // ✅ 改為字串 (Firestore doc.id)
+  firebaseId?: string; // 其實可以慢慢廢棄，因為 id 就是 firebaseId
   name: string;
   startDate: string;
   endDate: string;
@@ -15,17 +16,17 @@ export interface Trip {
 }
 
 export interface Day {
-  id?: number;
-  tripId: number;
+  id?: string; // ✅
+  tripId: string; // ✅ 改為字串
   date: string;
   dayNumber: number;
   sortOrder: number;
 }
 
 export interface Place {
-  id?: number;
-  dayId: number;
-  tripId: number;
+  id?: string; // ✅
+  dayId: string; // ✅
+  tripId: string; // ✅
   name: string;
   lat?: number;
   lng?: number;
@@ -40,8 +41,8 @@ export interface Place {
 }
 
 export interface Note {
-  id?: number;
-  placeId: number;
+  id?: string; // ✅
+  placeId: string; // ✅
   type: 'text' | 'url';
   content: string;
   url?: string;
@@ -49,19 +50,19 @@ export interface Note {
 }
 
 export interface Attachment {
-  id?: number;
-  parentId: number;
-  parentType: 'place' | 'flight' | 'hotel' | 'ticket';
+  id?: string; // ✅
+  parentId: string; // ✅
+  parentType: ParentType;
   fileName: string;
   mimeType: string;
-  blob: Blob;
+  blob: Blob; // 注意：若要完全無伺服器，Blob 不能直接存 Firestore，需要存 Firebase Storage。這裡先保留。
   thumbnail?: Blob;
   createdAt: number;
 }
 
 export interface Flight {
-  id?: number;
-  tripId: number;
+  id?: string; // ✅
+  tripId: string; // ✅
   airline: string;
   flightNo: string;
   departureTime: string;
@@ -75,8 +76,8 @@ export interface Flight {
 }
 
 export interface Hotel {
-  id?: number;
-  tripId: number;
+  id?: string; // ✅
+  tripId: string; // ✅
   name: string;
   address?: string;
   lat?: number;
@@ -91,8 +92,8 @@ export interface Hotel {
 }
 
 export interface Ticket {
-  id?: number;
-  tripId: number;
+  id?: string; // ✅
+  tripId: string; // ✅
   title: string;
   date?: string;
   venue?: string;
@@ -103,8 +104,8 @@ export interface Ticket {
 }
 
 export interface ChecklistItem {
-  id?: number;
-  tripId: number;
+  id?: string; // ✅
+  tripId: string; // ✅
   category: string;
   text: string;
   checked: boolean;
@@ -114,8 +115,8 @@ export interface ChecklistItem {
 }
 
 export interface BudgetItem {
-  id?: number;
-  tripId: number;
+  id?: string; // ✅
+  tripId: string; // ✅
   category: string;
   description: string;
   amount: number;
@@ -124,8 +125,8 @@ export interface BudgetItem {
 }
 
 export interface Resource {
-  id?: number;
-  tripId: number;
+  id?: string; // ✅
+  tripId: string; // ✅
   title: string;
   url: string;
   category?: string;
@@ -137,11 +138,8 @@ export type ParentType = 'place' | 'flight' | 'hotel' | 'ticket';
 /* ===================== Auth & Permissions ===================== */
 
 export type Role = 'admin' | 'member' | 'guest';
-
 export type PermissionLevel = 'none' | 'read' | 'write';
-
 export type PermissionTab = 'planner' | 'flights' | 'hotels' | 'tickets' | 'resources';
-
 export type TabPermissions = Record<PermissionTab, PermissionLevel>;
 
 export interface Collaborator {
@@ -152,5 +150,5 @@ export interface Collaborator {
 export interface TripMeta {
   adminUid: string;
   adminEmail: string;
-  collaborators: Record<string, Collaborator>; // keyed by sanitized email
+  collaborators: Record<string, Collaborator>;
 }

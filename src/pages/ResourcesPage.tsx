@@ -1,15 +1,37 @@
 import { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/database';
-import type { Resource } from '../types';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { firestore } from '../firebase';
+import type { Resource, Day, Place, Note } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { normalizeEmail } from '../utils/emails';
+import { useFirestoreQuery } from '../hooks/useFirestoreQuery';
 
 interface ResourcesPageProps {
-  tripId: number;
+  tripId: string;
   readOnly?: boolean;
 }
 
 export default function ResourcesPage({ tripId, readOnly = false }: ResourcesPageProps) {
+  // 🔒 權限判斷邏輯
+  const { role, user, tripMeta } = useAuth();
+  const isAdmin = role === 'admin';
+  const myEmail = user?.email ? normalizeEmail(user.email) : '';
+  const collabs = tripMeta?.collaborators || {};
+  const myCollab = collabs[myEmail] || Object.values(collabs).find((c: any) => normalizeEmail(c.email) === myEmail);
+  const perms = myCollab?.permissions || {};
+  const hasAccess = isAdmin || (myCollab && perms['resources'] !== 'none');
+
   const [activeTab, setActiveTab] = useState<'manual' | 'auto'>('manual');
+
+  // 🚫 如果沒有權限，直接整頁隱藏
+  if (!hasAccess) {
+    return (
+      <div className="empty-state">
+        <p style={{ fontSize: '3rem' }}>🚫</p>
+        <p>您沒有檢視資源連結的權限</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -17,7 +39,6 @@ export default function ResourcesPage({ tripId, readOnly = false }: ResourcesPag
         <h1>連結資源 🔗</h1>
       </div>
 
-      {/* Tabs */}
       <div className="tabs">
         <button className={`tab ${activeTab === 'manual' ? 'active' : ''}`} onClick={() => setActiveTab('manual')}>
           📌 我的連結
@@ -37,24 +58,22 @@ export default function ResourcesPage({ tripId, readOnly = false }: ResourcesPag
 }
 
 /* ========== Manual Links Section ========== */
-function ManualLinks({ tripId, readOnly = false }: { tripId: number; readOnly?: boolean }) {
-  const resources = useLiveQuery(
-    () => db.resources.where('tripId').equals(tripId).sortBy('sortOrder'),
-    [tripId]
-  );
+function ManualLinks({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
+  const resources = useFirestoreQuery<Resource>(tripId, 'resources', 'sortOrder');
 
   const [newTitle, setNewTitle] = useState('');
   const [newUrl, setNewUrl] = useState('');
   const [newCategory, setNewCategory] = useState('');
 
   const addResource = async () => {
+    if (!tripId) return;
     const url = newUrl.trim();
     if (!url) return;
-    await db.resources.add({
-      tripId,
+    await addDoc(collection(firestore, 'trips', String(tripId), 'resources'), {
+      tripId: String(tripId),
       title: newTitle.trim() || url,
       url,
-      category: newCategory.trim() || undefined,
+      category: newCategory.trim() || null,
       sortOrder: resources?.length ?? 0,
     });
     setNewTitle('');
@@ -62,12 +81,14 @@ function ManualLinks({ tripId, readOnly = false }: { tripId: number; readOnly?: 
     setNewCategory('');
   };
 
-  const deleteResource = async (id: number) => {
-    await db.resources.delete(id);
+  const deleteResource = async (id: string) => {
+    if (!tripId || !id) return;
+    await deleteDoc(doc(firestore, 'trips', String(tripId), 'resources', String(id)));
   };
 
-  const updateResource = async (id: number, updates: Partial<Resource>) => {
-    await db.resources.update(id, updates);
+  const updateResource = async (id: string, updates: Partial<Resource>) => {
+    if (!tripId || !id) return;
+    await updateDoc(doc(firestore, 'trips', String(tripId), 'resources', String(id)), updates);
   };
 
   // Group by category
@@ -152,8 +173,8 @@ function ResourceCard({
   readOnly = false,
 }: {
   resource: Resource;
-  onDelete: (id: number) => void;
-  onUpdate: (id: number, updates: Partial<Resource>) => void;
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<Resource>) => void;
   readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
@@ -204,26 +225,10 @@ function ResourceCard({
 }
 
 /* ========== Auto Links Section ========== */
-function AutoLinks({ tripId }: { tripId: number }) {
-  const days = useLiveQuery(
-    () => db.days.where('tripId').equals(tripId).sortBy('sortOrder'),
-    [tripId]
-  );
-
-  const places = useLiveQuery(
-    () => db.places.where('tripId').equals(tripId).sortBy('sortOrder'),
-    [tripId]
-  );
-
-  const notes = useLiveQuery(async () => {
-    if (!places) return [];
-    const placeIds = places.map(p => p.id!);
-    return db.notes
-      .where('placeId')
-      .anyOf(placeIds)
-      .filter(n => n.type === 'url')
-      .toArray();
-  }, [places]);
+function AutoLinks({ tripId }: { tripId: string }) {
+  const days = useFirestoreQuery<Day>(tripId, 'days', 'sortOrder');
+  const places = useFirestoreQuery<Place>(tripId, 'places', 'sortOrder');
+  const notes = useFirestoreQuery<Note>(tripId, 'notes', 'sortOrder');
 
   type LinkItem = { dayNumber: number; placeName: string; url: string; label?: string };
   const allLinks: LinkItem[] = [];

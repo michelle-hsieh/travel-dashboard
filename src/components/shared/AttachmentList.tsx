@@ -1,100 +1,51 @@
-import { useState, useEffect } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/database';
-import { blobToObjectURL } from '../../utils/blob';
-import Lightbox from './Lightbox';
+import { useState } from 'react';
+import { deleteDoc, doc } from 'firebase/firestore';
+import { firestore } from '../../firebase';
+import { useFirestoreQuery } from '../../hooks/useFirestoreQuery';
 import type { Attachment, ParentType } from '../../types';
 
 interface AttachmentListProps {
-  parentId: number;
+  parentId: string; // ✅ 確保這裡是 string
   parentType: ParentType;
 }
 
 export default function AttachmentList({ parentId, parentType }: AttachmentListProps) {
-  const attachments = useLiveQuery(
-    () =>
-      db.attachments
-        .where('[parentType+parentId]')
-        .equals([parentType, parentId])
-        .toArray()
-        .catch(() =>
-          db.attachments
-            .filter((a) => a.parentType === parentType && a.parentId === parentId)
-            .toArray()
-        ),
-    [parentId, parentType]
-  );
+  // NOTE: attachments 目前設計是 Top-level collection (不屬於特定 Trip)，這在小型應用中可行。
+  // 但因為 useFirestoreQuery 是設計給子集合使用的，這裡我們得另外處理。
+  // 為了先維持一致性，我先保持原樣，但修正 id 使用。
+  const allAttachments = useFirestoreQuery<Attachment>(null, 'attachments', 'createdAt') || [];
+  const attachments = allAttachments.filter((a: Attachment) => a.parentType === parentType && String(a.parentId) === String(parentId));
 
   const [selected, setSelected] = useState<Attachment | null>(null);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('確定刪除檔案？') || !id) return;
+    await deleteDoc(doc(firestore, 'attachments', String(id)));
+    if (selected?.id === id) setSelected(null);
+  };
 
   if (!attachments || attachments.length === 0) return null;
 
   return (
-    <>
-      <div className="thumbnail-grid">
-        {attachments.map((att) => (
-          <ThumbnailItem key={att.id} attachment={att} onClick={() => setSelected(att)} onDelete={async () => { await db.attachments.delete(att.id!); }} />
-        ))}
-      </div>
+    <div style={{ marginTop: 'var(--sp-sm)', display: 'flex', gap: 'var(--sp-xs)', flexWrap: 'wrap' }}>
+      {attachments.map((att: Attachment) => (
+        <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem' }}>
+          <span style={{ cursor: 'pointer', color: 'var(--accent-light)' }} onClick={() => setSelected(att)}>
+            📎 {att.fileName}
+          </span>
+          <button className="btn-icon" style={{ fontSize: '0.6rem', color: 'var(--danger)' }} onClick={() => handleDelete(att.id!)}>✕</button>
+        </div>
+      ))}
+
       {selected && (
-        <Lightbox
-          blob={selected.blob}
-          mimeType={selected.mimeType}
-          fileName={selected.fileName}
-          onClose={() => setSelected(null)}
-        />
+        <div className="modal-overlay" onClick={() => setSelected(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3>{selected.fileName}</h3>
+            <p>檔案預覽目前不支援 base64 顯示，請改用 Firebase Storage。</p>
+            <button className="btn btn-secondary" onClick={() => setSelected(null)}>關閉</button>
+          </div>
+        </div>
       )}
-    </>
-  );
-}
-
-function ThumbnailItem({
-  attachment,
-  onClick,
-  onDelete,
-}: {
-  attachment: Attachment;
-  onClick: () => void;
-  onDelete: () => void;
-}) {
-  const [url, setUrl] = useState('');
-
-  useEffect(() => {
-    const source = attachment.thumbnail || (attachment.mimeType.startsWith('image/') ? attachment.blob : null);
-    if (source) {
-      const u = blobToObjectURL(source);
-      setUrl(u);
-      return () => URL.revokeObjectURL(u);
-    }
-  }, [attachment]);
-
-  const isImage = attachment.mimeType.startsWith('image/');
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <div className={isImage ? 'thumbnail' : 'thumbnail-file'} onClick={onClick} title={attachment.fileName}>
-        {isImage && url ? (
-          <img src={url} alt={attachment.fileName} />
-        ) : (
-          <span>{attachment.mimeType === 'application/pdf' ? '📑' : '📄'}</span>
-        )}
-      </div>
-      <button
-        className="btn-icon"
-        style={{
-          position: 'absolute',
-          top: -6,
-          right: -6,
-          width: 20,
-          height: 20,
-          fontSize: '0.7rem',
-          background: 'var(--danger)',
-          color: '#fff',
-          borderRadius: '50%',
-        }}
-        onClick={(e) => { e.stopPropagation(); onDelete(); }}
-        title="刪除"
-      >✕</button>
     </div>
   );
 }

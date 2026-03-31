@@ -27,7 +27,7 @@ interface AuthState {
   role: Role;
   permissions: TabPermissions;
   tripMeta: TripMeta | null;
-  activeTripId: string | null;
+  activeTripId: string | null; // ✅ 明確指定為 Firestore 字串 ID
   setActiveTripId: (id: string | null) => void;
   canWrite: (tab: keyof TabPermissions) => boolean;
   canRead: (tab: keyof TabPermissions) => boolean;
@@ -43,7 +43,7 @@ const AuthContext = createContext<AuthState>({
   permissions: DEFAULT_PERMISSIONS,
   tripMeta: null,
   activeTripId: null,
-  setActiveTripId: () => {},
+  setActiveTripId: () => { },
   canWrite: () => false,
   canRead: () => false,
 });
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role>('guest');
   const [permissions, setPermissions] = useState<TabPermissions>(DEFAULT_PERMISSIONS);
   const [tripMeta, setTripMeta] = useState<TripMeta | null>(null);
-  const [activeTripId, setActiveTripId] = useState<string | null>(null);
+  const [activeTripId, setActiveTripId] = useState<string | null>(null); // ✅ 改用字串
 
   const isWhitelistedAdmin = useCallback(
     (u: User | null): boolean => {
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsub;
   }, []);
 
-  // Listen to trip metadata when activeTripId changes
+  // Listen to trip metadata directly from Firestore
   useEffect(() => {
     if (!activeTripId) {
       setTripMeta(null);
@@ -96,7 +96,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       doc(firestore, 'trips', activeTripId),
       (snap) => {
         if (!snap.exists()) {
-          // Trip not in Firestore yet (local IndexedDB only)
           setTripMeta(null);
           if (isWhitelistedAdmin(user)) {
             setRole('admin');
@@ -107,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           return;
         }
+
         const data = snap.data() as TripMeta;
         setTripMeta(data);
 
@@ -116,10 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const userEmailRaw = user.email?.toLowerCase().trim() ?? '';
         const userEmailNormalized = user.email ? normalizeEmail(user.email) : '';
 
-        // Check if admin (must be the whitelisted root admin)
+        // Check if admin
         const isTripAdmin =
           isWhitelistedAdmin(user) &&
           (user.uid === data.adminUid ||
@@ -132,15 +131,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Check if collaborator by normalized key
+        // Check if collaborator (優先用完整 Email，找不到再用舊版底線相容)
         const key = collaboratorKey(userEmailNormalized);
-        const legacyKey = userEmailRaw.replace(/\./g, '_'); // backward compatibility for old data
+        const legacyKey = userEmailNormalized.split('.').join('_');
         let collab = data.collaborators?.[key] ?? data.collaborators?.[legacyKey];
-        if (!collab && data.collaborators) {
-          collab = Object.values(data.collaborators).find((c: any) =>
-            normalizeEmail((c as any).email) === userEmailNormalized
-          ) as any;
-        }
+
         if (collab) {
           setRole('member');
           setPermissions(collab.permissions);
@@ -151,7 +146,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       (error) => {
         console.error('Error listening to trip meta:', error);
-        // Fallback: if Firestore is not set up yet, only whitelisted admin can continue as admin
         if (isWhitelistedAdmin(user)) {
           setRole('admin');
           setPermissions(ADMIN_PERMISSIONS);
