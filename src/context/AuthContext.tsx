@@ -108,7 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const data = snap.data() as TripMeta;
-        setTripMeta(data);
+        // ✅ 同步旅程名稱
+        setTripMeta({ ...data, name: (snap.data() as any).name });
 
         if (!user) {
           setRole('guest');

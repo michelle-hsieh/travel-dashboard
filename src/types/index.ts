@@ -148,6 +148,7 @@ export interface Collaborator {
 }
 
 export interface TripMeta {
+  name?: string; // ✅ 儲存旅程名稱
   adminUid: string;
   adminEmail: string;
   collaborators: Record<string, Collaborator>;

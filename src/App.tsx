@@ -14,7 +14,7 @@ function AppInner() {
   const [page, setPage] = useState<Page>('home');
   // ✅ 統一使用 Firestore 字串 ID
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const { role, canRead, canWrite, activeTripId, setActiveTripId } = useAuth();
+  const { role, canRead, canWrite, activeTripId, setActiveTripId, tripMeta } = useAuth();
 
   const plannerWritable = canWrite('planner');
   const logisticsWritable = canWrite('flights') || canWrite('hotels') || canWrite('tickets');
@@ -64,14 +64,24 @@ function AppInner() {
   }, [role, activeTripId]);
 
   return (
-    <div className="app-container">
-      <div className="auth-bar">
-        <LoginButton />
-        {role !== 'guest' && (
-          <span className="auth-role-badge">
-            {role === 'admin' ? '管理者' : '成員'}
-          </span>
-        )}
+    <div className={`app-container ${isOffline ? 'offline-active' : ''}`}>
+      <div className="auth-bar" style={{ top: isOffline ? 28 : 0 }}>
+        <div className="auth-bar-left">
+          {activeTripId && tripMeta?.name && (
+            <div className="current-trip-label">
+              <span className="trip-emoji">✈️</span>
+              <span className="trip-name">{tripMeta.name}</span>
+            </div>
+          )}
+        </div>
+        <div className="auth-bar-right">
+          {role !== 'guest' && (
+            <span className="auth-role-badge">
+              {role === 'admin' ? '管理者' : '成員'}
+            </span>
+          )}
+          <LoginButton />
+        </div>
       </div>
 
       {/* ✅ 在新架構下，離線時依然可以順暢使用 */}
