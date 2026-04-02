@@ -155,7 +155,7 @@ export default function AdminPage({ tripId }: { tripId: string }) {
       <div className="card" style={{ marginBottom: 'var(--sp-lg)', border: '1px solid var(--accent)', background: 'rgba(var(--accent-rgb, 176,141,122), 0.03)' }}>
         <div className="section-title" style={{ color: 'var(--accent)', margin: 0, marginBottom: 'var(--sp-xs)' }}>🌐 全體預設權限 (所有人)</div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 'var(--sp-sm)' }}>
-          設定「未在下方清單中」的登入使用者所擁有的權限。通常用於開放「所有人可讀取」。
+          設定「未在下方清單中」的使用者權限。可用於開放「所有人可讀取」，訪客亦可點擊進入。
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 'var(--sp-sm)' }}>
           {(Object.keys(TAB_LABELS) as PermissionTab[]).map((tab) => (

@@ -1,7 +1,7 @@
 // types/index.ts
 export interface Trip {
-  id?: string; // ✅ 改為字串 (Firestore doc.id)
-  firebaseId?: string; // 其實可以慢慢廢棄，因為 id 就是 firebaseId
+  id?: string;
+  firebaseId?: string;
   name: string;
   startDate: string;
   endDate: string;
@@ -9,7 +9,7 @@ export interface Trip {
   adminUid?: string;
   adminEmail?: string;
   collaborators?: Record<string, Collaborator>;
-  publicPermissions?: TabPermissions; // ✅ 新增：全體預設權限
+  publicPermissions?: TabPermissions; // ✅ 恢復
   collaboratorEmails?: string[];
   memberEmails?: string[];
   daysCount?: number;
@@ -17,17 +17,17 @@ export interface Trip {
 }
 
 export interface Day {
-  id?: string; // ✅
-  tripId: string; // ✅ 改為字串
+  id?: string;
+  tripId: string;
   date: string;
   dayNumber: number;
   sortOrder: number;
 }
 
 export interface Place {
-  id?: string; // ✅
-  dayId: string; // ✅
-  tripId: string; // ✅
+  id?: string;
+  dayId: string;
+  tripId: string;
   name: string;
   lat?: number;
   lng?: number;
@@ -42,8 +42,8 @@ export interface Place {
 }
 
 export interface Note {
-  id?: string; // ✅
-  placeId: string; // ✅
+  id?: string;
+  placeId: string;
   type: 'text' | 'url';
   content: string;
   url?: string;
@@ -51,19 +51,19 @@ export interface Note {
 }
 
 export interface Attachment {
-  id?: string; // ✅
-  parentId: string; // ✅
+  id?: string;
+  parentId: string;
   parentType: ParentType;
   fileName: string;
   mimeType: string;
-  blob: Blob; // 注意：若要完全無伺服器，Blob 不能直接存 Firestore，需要存 Firebase Storage。這裡先保留。
+  blob: Blob;
   thumbnail?: Blob;
   createdAt: number;
 }
 
 export interface Flight {
-  id?: string; // ✅
-  tripId: string; // ✅
+  id?: string;
+  tripId: string;
   airline: string;
   flightNo: string;
   departureTime: string;
@@ -77,8 +77,8 @@ export interface Flight {
 }
 
 export interface Hotel {
-  id?: string; // ✅
-  tripId: string; // ✅
+  id?: string;
+  tripId: string;
   name: string;
   address?: string;
   lat?: number;
@@ -93,8 +93,8 @@ export interface Hotel {
 }
 
 export interface Ticket {
-  id?: string; // ✅
-  tripId: string; // ✅
+  id?: string;
+  tripId: string;
   title: string;
   date?: string;
   venue?: string;
@@ -105,21 +105,21 @@ export interface Ticket {
 }
 
 export interface ChecklistItem {
-  id?: string; // ✅
-  tripId: string; // ✅
+  id?: string;
+  tripId: string;
   category: string;
   text: string;
   checked: boolean;
   sortOrder: number;
   amount?: number;
   currency?: string;
-  recipient?: string; // ✅ 新增：伴手禮對象
-  location?: string;  // ✅ 新增：購買地點
+  recipient?: string;
+  location?: string;
 }
 
 export interface BudgetItem {
-  id?: string; // ✅
-  tripId: string; // ✅
+  id?: string;
+  tripId: string;
   category: string;
   description: string;
   amount: number;
@@ -128,8 +128,8 @@ export interface BudgetItem {
 }
 
 export interface Resource {
-  id?: string; // ✅
-  tripId: string; // ✅
+  id?: string;
+  tripId: string;
   title: string;
   url: string;
   category?: string;
@@ -137,8 +137,6 @@ export interface Resource {
 }
 
 export type ParentType = 'place' | 'flight' | 'hotel' | 'ticket';
-
-/* ===================== Auth & Permissions ===================== */
 
 export type Role = 'admin' | 'member' | 'guest';
 export type PermissionLevel = 'none' | 'read' | 'write';
@@ -151,10 +149,11 @@ export interface Collaborator {
 }
 
 export interface TripMeta {
-  name?: string; // ✅ 儲存旅程名稱
+  name?: string;
   startDate?: string;
   endDate?: string;
   adminUid: string;
   adminEmail: string;
   collaborators: Record<string, Collaborator>;
+  publicPermissions?: TabPermissions; // ✅ 恢復
 }

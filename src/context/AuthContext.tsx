@@ -27,14 +27,13 @@ interface AuthState {
   role: Role;
   permissions: TabPermissions;
   tripMeta: TripMeta | null;
-  activeTripId: string | null; // ✅ 明確指定為 Firestore 字串 ID
+  activeTripId: string | null;
   setActiveTripId: (id: string | null) => void;
   canWrite: (tab: keyof TabPermissions) => boolean;
   canRead: (tab: keyof TabPermissions) => boolean;
 }
 
 const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL ?? '').toLowerCase().trim();
-
 
 const AuthContext = createContext<AuthState>({
   user: null,
@@ -54,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role>('guest');
   const [permissions, setPermissions] = useState<TabPermissions>(DEFAULT_PERMISSIONS);
   const [tripMeta, setTripMeta] = useState<TripMeta | null>(null);
-  const [activeTripId, setActiveTripId] = useState<string | null>(null); // ✅ 改用字串
+  const [activeTripId, setActiveTripId] = useState<string | null>(null);
 
   const isWhitelistedAdmin = useCallback(
     (u: User | null): boolean => {
@@ -65,20 +64,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  // Listen to Firebase Auth state
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
-      if (!u) {
+      if (!u && !activeTripId) {
         setRole('guest');
         setPermissions(DEFAULT_PERMISSIONS);
       }
     });
     return unsub;
-  }, []);
+  }, [activeTripId]);
 
-  // Listen to trip metadata directly from Firestore
   useEffect(() => {
     if (!activeTripId) {
       setTripMeta(null);
@@ -97,18 +94,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (snap) => {
         if (!snap.exists()) {
           setTripMeta(null);
-          if (isWhitelistedAdmin(user)) {
-            setRole('admin');
-            setPermissions(ADMIN_PERMISSIONS);
-          } else {
-            setRole('guest');
-            setPermissions(DEFAULT_PERMISSIONS);
-          }
+          setRole('guest');
+          setPermissions(DEFAULT_PERMISSIONS);
           return;
         }
 
         const data = snap.data() as TripMeta;
-        // ✅ 同步旅程資訊
         setTripMeta({ 
           ...data, 
           name: (snap.data() as any).name,
@@ -116,20 +107,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           endDate: (snap.data() as any).endDate,
         });
 
-        if (!user) {
-          setRole('guest');
-          setPermissions(DEFAULT_PERMISSIONS);
-          return;
-        }
+        const applyPublic = () => {
+          if (data.publicPermissions && Object.values(data.publicPermissions).some(v => v !== 'none')) {
+            setRole('member');
+            setPermissions(data.publicPermissions);
+          } else {
+            setRole('guest');
+            setPermissions(DEFAULT_PERMISSIONS);
+          }
+        };
 
-        const userEmailNormalized = user.email ? normalizeEmail(user.email) : '';
-
-        // Check if admin
+        // 1. 檢查是否為管理員
+        const userEmailNormalized = user?.email ? normalizeEmail(user.email) : '';
         const isTripAdmin =
           isWhitelistedAdmin(user) ||
-          user.uid === data.adminUid ||
-          (data.adminEmail ? normalizeEmail(data.adminEmail) === userEmailNormalized : false) ||
-          !data.adminUid;
+          (user && user.uid === data.adminUid) ||
+          (data.adminEmail && userEmailNormalized && normalizeEmail(data.adminEmail) === userEmailNormalized) ||
+          (!data.adminUid && user); // 向下相容
 
         if (isTripAdmin) {
           setRole('admin');
@@ -137,29 +131,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Check if collaborator (優先用完整 Email，找不到再用舊版底線相容)
-        const key = collaboratorKey(userEmailNormalized);
-        const legacyKey = userEmailNormalized.split('.').join('_');
-        let collab = data.collaborators?.[key] ?? data.collaborators?.[legacyKey];
+        // 2. 檢查是否為特定協作者
+        if (userEmailNormalized) {
+          const key = collaboratorKey(userEmailNormalized);
+          const legacyKey = userEmailNormalized.split('.').join('_');
+          let collab = data.collaborators?.[key] ?? data.collaborators?.[legacyKey];
 
-        if (collab) {
-          setRole('member');
-          setPermissions(collab.permissions);
-        } else if (data.publicPermissions) {
-          // ✅ 採用全體預設權限
-          setRole('member');
-          setPermissions(data.publicPermissions);
-        } else {
-          setRole('guest');
-          setPermissions(DEFAULT_PERMISSIONS);
+          if (collab) {
+            setRole('member');
+            setPermissions(collab.permissions);
+            return;
+          }
         }
+
+        // 3. 套用全體預設權限或設為訪客
+        applyPublic();
       },
       (error) => {
         console.error('Error listening to trip meta:', error);
-        if (isWhitelistedAdmin(user)) {
-          setRole('admin');
-          setPermissions(ADMIN_PERMISSIONS);
-        }
       }
     );
 

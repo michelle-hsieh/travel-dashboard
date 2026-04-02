@@ -20,26 +20,27 @@ interface LogisticsPageProps {
 type LogisticsTab = 'flights' | 'hotels' | 'tickets' | 'checklist' | 'budget';
 
 export default function LogisticsPage({ tripId, role, readOnly = false }: LogisticsPageProps) {
-  const { user, tripMeta } = useAuth();
+  const { user, tripMeta, permissions } = useAuth(); // ✅ 使用全局 permissions
   const isAdmin = role === 'admin';
-  const myEmail = user?.email ? normalizeEmail(user.email) : '';
-  const collabs = tripMeta?.collaborators || {};
-  const myCollab = collabs[myEmail] || Object.values(collabs).find((c: any) => normalizeEmail(c.email) === myEmail);
-  const perms = myCollab?.permissions || {};
 
-  const allTabs: { key: LogisticsTab; label: string; icon: string }[] = [
-    { key: 'flights', label: '機票', icon: '✈️' },
-    { key: 'hotels', label: '住宿', icon: '🏨' },
-    { key: 'tickets', label: '票券', icon: '🎫' },
-    { key: 'checklist', label: '清單', icon: '✅' },
-    { key: 'budget', label: '預算', icon: '💰' },
+  const allTabs: { key: LogisticsTab; label: string; icon: string; permKey?: PermissionTab }[] = [
+    { key: 'flights', label: '機票', icon: '✈️', permKey: 'flights' },
+    { key: 'hotels', label: '住宿', icon: '🏨', permKey: 'hotels' },
+    { key: 'tickets', label: '票券', icon: '🎫', permKey: 'tickets' },
+    { key: 'checklist', label: '清單', icon: '✅', permKey: 'planner' }, // 清單權限與 planner 掛鉤
+    { key: 'budget', label: '預算', icon: '💰' }, // 預算預設全體可見或跟隨基本權限
   ];
 
   const tabs = allTabs.filter(t => {
     if (isAdmin) return true;
-    if (t.key === 'checklist') return false;
-    if (t.key === 'budget') return true;
-    return perms[t.key as PermissionTab] && perms[t.key as PermissionTab] !== 'none';
+    if (t.key === 'budget') return true; // 預算暫時開放給所有能進入旅程的人
+    
+    // 檢查是否有對應分頁的權限 (包含從 publicPermissions 繼承來的)
+    if (t.permKey) {
+      const p = permissions[t.permKey];
+      return p === 'read' || p === 'write';
+    }
+    return false;
   });
 
   const initialTab = tabs.length > 0 ? tabs[0].key : null;

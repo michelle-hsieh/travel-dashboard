@@ -2,7 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: normalize Gmail (remove dots, strip +tag) for robust email match
     function normalizeEmail(email) {
       let emailStr = (email == null) ? "" : (email + "");
       let lower = emailStr.lower().trim();
@@ -20,13 +19,10 @@ service cloud.firestore {
       let tripPath = /databases/$(database)/documents/trips/$(tripId);
       let docExists = exists(tripPath);
       let doc = docExists ? get(tripPath).data : null;
-      
       let hasEmail = authed && request.auth.token.email != null;
       let userEmail = hasEmail ? normalizeEmail(request.auth.token.email) : "";
-      
       let adminUid = (doc != null) ? doc.get("adminUid", "") : "";
       let adminEmail = (doc != null) ? doc.get("adminEmail", "") : "";
-
       return authed && docExists && (
         (adminUid == request.auth.uid) ||
         (hasEmail && adminEmail != "" && normalizeEmail(adminEmail) == userEmail)
@@ -37,12 +33,10 @@ service cloud.firestore {
       let tripPath = /databases/$(database)/documents/trips/$(tripId);
       let docExists = exists(tripPath);
       let doc = docExists ? get(tripPath).data : null;
-      
       let hasEmail = request.auth != null && request.auth.token.email != null;
       let normalized = hasEmail ? normalizeEmail(request.auth.token.email) : "";
       let key1 = normalized.replace("\\.", "_").replace("\\.", "_").replace("\\.", "_");
       let collabs = (doc != null) ? doc.get("collaborators", {}) : {};
-      
       let c1 = collabs.get(normalized, null);
       let c2 = c1 != null ? c1 : collabs.get(key1, null);
       return hasEmail ? (c2 != null ? c2 : collabs.get(normalized.lower(), null)) : null;
@@ -61,33 +55,25 @@ service cloud.firestore {
       let collab = getCollab(tripId);
       let specificPerm = (collab != null) ? collab.get("permissions", {}).get(tab, "none") : "none";
       
-      // 2. 檢查全體預設權限
+      // 2. 檢查全體預設權限 (所有人)
       let publicPerm = (doc != null) ? doc.get("publicPermissions", {}).get(tab, "none") : "none";
 
-      // 只要其中一個滿足權限即可 (特定權限優先概念已包含在邏輯中)
       return (specificPerm == level || (level == 'read' && specificPerm == 'write')) ||
              (publicPerm == level || (level == 'read' && publicPerm == 'write'));
     }
 
     // Trips Collection
     match /trips/{tripId} {
-      allow read: if true;
+      allow read: if true; 
       allow write: if request.auth != null && (
-        !exists(/databases/$(database)/documents/trips/$(tripId))
-        || isAdmin(tripId)
-        || (
-          request.resource.data.get("adminEmail", null) != null
-          && request.auth.token.email != null
-          && normalizeEmail(request.resource.data.adminEmail) == normalizeEmail(request.auth.token.email)
-        )
+        !exists(/databases/$(database)/documents/trips/$(tripId)) || isAdmin(tripId)
       );
 
       // --- SUBCOLLECTIONS ---
-
-      match /checklistItems/{itemId} {
-        allow read, write: if isAdmin(tripId);
+      match /checklistItems/{itemId} { 
+        allow read: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'read'); 
+        allow write: if isAdmin(tripId);
       }
-
       match /days/{dayId} {
         allow read: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'read');
         allow write: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'write');
@@ -96,40 +82,28 @@ service cloud.firestore {
         allow read: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'read');
         allow write: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'write');
       }
-
       match /flights/{flightId} {
         allow read: if isAdmin(tripId) || hasPermission(tripId, 'flights', 'read');
         allow write: if isAdmin(tripId) || hasPermission(tripId, 'flights', 'write');
       }
-
       match /hotels/{hotelId} {
         allow read: if isAdmin(tripId) || hasPermission(tripId, 'hotels', 'read');
         allow write: if isAdmin(tripId) || hasPermission(tripId, 'hotels', 'write');
       }
-
       match /tickets/{ticketId} {
         allow read: if isAdmin(tripId) || hasPermission(tripId, 'tickets', 'read');
         allow write: if isAdmin(tripId) || hasPermission(tripId, 'tickets', 'write');
       }
-
       match /budgetItems/{itemId} {
         allow read: if isAdmin(tripId) || isCollaborator(tripId);
         allow write: if isAdmin(tripId);
       }
-
       match /resources/{resourceId} {
         allow read: if isAdmin(tripId) || hasPermission(tripId, 'resources', 'read');
         allow write: if isAdmin(tripId) || hasPermission(tripId, 'resources', 'write');
       }
-
-      match /notes/{noteId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null;
-      }
-      match /attachments/{attachId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null;
-      }
+      match /notes/{noteId} { allow read, write: if request.auth != null || hasPermission(tripId, 'planner', 'read'); }
+      match /attachments/{attachId} { allow read, write: if request.auth != null || hasPermission(tripId, 'planner', 'read'); }
     }
   }
 }

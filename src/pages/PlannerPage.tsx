@@ -11,28 +11,23 @@ import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSe
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useAuth } from '../context/AuthContext';
-import { normalizeEmail } from '../utils/emails';
 import { useFirestoreQuery } from '../hooks/useFirestoreQuery';
 
 const NUM_EMOJIS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 function numEmoji(i: number) { return NUM_EMOJIS[i] ?? `${i + 1}`; }
 
 interface PlannerPageProps {
-  tripId: string; // ✅
+  tripId: string;
   readOnly?: boolean;
 }
 
-const POOL_DAY_ID = 'pool'; // ✅ 改為字串
+const POOL_DAY_ID = 'pool';
 
 export default function PlannerPage({ tripId, readOnly = false }: PlannerPageProps) {
-  const { role, user, tripMeta } = useAuth();
+  const { role, tripMeta, canRead, canWrite } = useAuth();
 
   const isAdmin = role === 'admin';
-  const myEmail = user?.email ? normalizeEmail(user.email) : '';
-  const collabs = tripMeta?.collaborators || {};
-  const myCollab = collabs[myEmail] || Object.values(collabs).find((c: any) => normalizeEmail(c.email) === myEmail);
-  const perms = myCollab?.permissions || {};
-  const hasAccess = isAdmin || (myCollab && perms['planner'] !== 'none');
+  const hasAccess = canRead('planner');
 
   if (!hasAccess) {
     return (
@@ -43,9 +38,8 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
     );
   }
 
-  if (readOnly) {
-    return <ReadOnlyPlanner tripId={tripId} />;
-  }
+  // 判斷是否為唯讀模式 (頁面要求唯讀 OR 使用者無寫入權限)
+  const isReadOnly = readOnly || !canWrite('planner');
 
   const days = useFirestoreQuery<Day>(tripId, 'days', 'sortOrder');
   const [selectedTab, setSelectedTab] = useState<string | null>(null);
@@ -53,7 +47,7 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
   const allPlaces = useFirestoreQuery<Place>(tripId, 'places', 'sortOrder');
   const poolCount = allPlaces?.filter(p => p.dayId === POOL_DAY_ID).length ?? 0;
 
-  // ✅ 自動根據日期區間生成/更新 Days
+  // 自動同步 Days 數量
   useEffect(() => {
     if (!isAdmin || !tripId || !tripMeta?.startDate || !tripMeta?.endDate || !days) return;
 
@@ -69,7 +63,6 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
     }
 
     const syncDays = async () => {
-      // 1. 補齊缺少的日期
       for (let i = 0; i < expectedDates.length; i++) {
         const dateStr = expectedDates[i];
         const existing = days.find(d => d.date === dateStr);
@@ -81,7 +74,6 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
             sortOrder: i,
           });
         } else if (existing.dayNumber !== i + 1 || existing.sortOrder !== i) {
-          // 2. 更新錯誤的序號或排序
           await updateDoc(doc(firestore, 'trips', String(tripId), 'days', String(existing.id!)), {
             dayNumber: i + 1,
             sortOrder: i,
@@ -89,7 +81,6 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
         }
       }
     };
-
     syncDays();
   }, [tripId, tripMeta?.startDate, tripMeta?.endDate, days, isAdmin]);
 
@@ -126,14 +117,14 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
       </div>
 
       {activeTab === 'pool' ? (
-        <PoolSection tripId={tripId} days={days ?? []} allPlaces={allPlaces ?? []} />
+        <PoolSection tripId={tripId} days={days ?? []} allPlaces={allPlaces ?? []} readOnly={isReadOnly} />
       ) : activeTab != null ? (
         <DayDetail 
           dayId={activeTab} 
           tripId={tripId} 
           days={days ?? []} 
           allPlaces={allPlaces ?? []} 
-          readOnly={isAdmin ? false : (!perms['planner'] || perms['planner'] === 'read')} 
+          readOnly={isReadOnly} 
         />
       ) : (
         <div className="empty-state">
@@ -145,65 +136,8 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
   );
 }
 
-function ReadOnlyPlanner({ tripId }: { tripId: string }) {
-  const days = useFirestoreQuery<Day>(tripId, 'days', 'sortOrder');
-  const allPlaces = useFirestoreQuery<Place>(tripId, 'places', 'sortOrder');
-  const poolPlaces = allPlaces?.filter(p => p.dayId === POOL_DAY_ID);
-  const hotels = useFirestoreQuery<Hotel>(tripId, 'hotels', 'sortOrder');
-  const flights = useFirestoreQuery<Flight>(tripId, 'flights', 'sortOrder');
-
-  return (
-    <div>
-      <div className="page-header"><h1>行程（只讀）</h1></div>
-      <div className="chip-bar">
-        <span className="chip active">🧺 未分配 ({poolPlaces?.length ?? 0})</span>
-        {days?.map((day, idx) => <span key={day.id} className="chip">{numEmoji(idx)} {day.date || '未設定日期'}</span>)}
-      </div>
-      <div style={{ display: 'grid', gap: 'var(--sp-md)', marginTop: 'var(--sp-md)' }}>
-        {poolPlaces && poolPlaces.length > 0 && (
-          <div className="card">
-            <h3 style={{ marginBottom: 'var(--sp-sm)' }}>未分配</h3>
-            <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
-              {poolPlaces.map(p => <li key={p.id}>{p.name || '未命名地點'}</li>)}
-            </ul>
-          </div>
-        )}
-        {days?.map((day, idx) => (
-          <ReadOnlyDay key={day.id} day={day} idx={idx} allPlaces={allPlaces ?? []} tripId={tripId} days={days} hotels={hotels || []} flights={flights || []} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ReadOnlyDay({ day, idx, allPlaces, tripId, days, hotels, flights }: { day: Day; idx: number, allPlaces: Place[], tripId: string, days: Day[], hotels: Hotel[], flights: Flight[] }) {
-  const placesInDay = allPlaces.filter(p => p.dayId === day.id);
-  const places = placesInDay.filter(p => !p.isBackup);
-  
-  const { startPoint, endPoint } = useItineraryBounds(day, days, hotels, flights);
-
-  return (
-    <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0 }}>{numEmoji(idx)} {day.date || '未設定日期'}</h3>
-      </div>
-      <div style={{ marginTop: 'var(--sp-sm)' }}>
-        {startPoint && <div style={{ fontWeight: 'bold', color: 'var(--accent)' }}>{startPoint.label} {startPoint.name}</div>}
-        {places && places.length > 0 ? (
-          <ol style={{ marginTop: 'var(--sp-xs)', paddingLeft: '1.2rem' }}>
-            {places.map(p => <li key={p.id}>{p.name || '未命名地點'}</li>)}
-          </ol>
-        ) : (
-          !startPoint && !endPoint && <p style={{ color: 'var(--text-muted)', marginTop: 'var(--sp-xs)' }}>尚無地點</p>
-        )}
-        {endPoint && <div style={{ fontWeight: 'bold', color: 'var(--accent)', marginTop: 'var(--sp-xs)' }}>{endPoint.label} {endPoint.name}</div>}
-      </div>
-    </div>
-  );
-}
-
 /* ===================== POOL (待排) ===================== */
-function PoolSection({ tripId, days, allPlaces }: { tripId: string; days: Day[], allPlaces: Place[] }) {
+function PoolSection({ tripId, days, allPlaces, readOnly = false }: { tripId: string; days: Day[], allPlaces: Place[], readOnly?: boolean }) {
   const places = allPlaces.filter(p => p.dayId === POOL_DAY_ID);
 
   const sensors = useSensors(
@@ -212,7 +146,7 @@ function PoolSection({ tripId, days, allPlaces }: { tripId: string; days: Day[],
   );
 
   const addPlace = async () => {
-    if (!tripId) return;
+    if (readOnly || !tripId) return;
     await addDoc(collection(firestore, 'trips', String(tripId), 'places'), {
       dayId: POOL_DAY_ID,
       tripId: String(tripId),
@@ -223,6 +157,7 @@ function PoolSection({ tripId, days, allPlaces }: { tripId: string; days: Day[],
   };
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    if (readOnly) return;
     const { active, over } = event;
     if (!over || active.id === over.id || !places || !tripId) return;
     const oldIndex = places.findIndex(p => p.id === active.id);
@@ -231,7 +166,7 @@ function PoolSection({ tripId, days, allPlaces }: { tripId: string; days: Day[],
     await Promise.all(
       reordered.map((p, i) => updateDoc(doc(firestore, 'trips', String(tripId), 'places', String(p.id!)), { sortOrder: i }))
     );
-  }, [places, tripId]);
+  }, [places, tripId, readOnly]);
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   useEffect(() => {
@@ -256,14 +191,14 @@ function PoolSection({ tripId, days, allPlaces }: { tripId: string; days: Day[],
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-md)' }}>
         <span className="section-title" style={{ margin: 0 }}>📋 待排景點</span>
-        <button className="btn btn-primary" onClick={addPlace} style={{ fontSize: '0.8rem' }}>＋ 新增景點</button>
+        {!readOnly && <button className="btn btn-primary" onClick={addPlace} style={{ fontSize: '0.8rem' }}>＋ 新增景點</button>}
       </div>
 
       {places.length > 0 ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={places.map(p => p.id!)} strategy={verticalListSortingStrategy}>
             {places.map((place, index) => (
-              <div key={place.id}><SortablePlaceCard place={place} index={index} days={days} tripId={tripId} /></div>
+              <div key={place.id}><SortablePlaceCard place={place} index={index} days={days} tripId={tripId} readOnly={readOnly} /></div>
             ))}
           </SortableContext>
         </DndContext>
@@ -274,56 +209,8 @@ function PoolSection({ tripId, days, allPlaces }: { tripId: string; days: Day[],
   );
 }
 
-/* ===================== HOOKS ===================== */
-function useItineraryBounds(day: Day | undefined, days: Day[], hotels: Hotel[] | undefined, flights: Flight[] | undefined) {
-  const isFirstDay = days.length > 0 && days[0].id === day?.id;
-  const isLastDay = days.length > 0 && days[days.length - 1].id === day?.id;
-  
-  const arrivalFlight = isFirstDay && flights?.length ? flights[0] : undefined;
-  const departureFlight = isLastDay && flights?.length ? flights[flights.length - 1] : undefined;
-
-  const arrivalAirportCoords = useGeocode(arrivalFlight?.arrivalAirport ? arrivalFlight.arrivalAirport + ' airport' : '');
-  const departureAirportCoords = useGeocode(departureFlight?.departureAirport ? departureFlight.departureAirport + ' airport' : '');
-
-  const today = day?.date;
-  
-  let startPoint: any = null;
-  let endPoint: any = null;
-
-  if (isFirstDay && arrivalFlight && arrivalAirportCoords) {
-    startPoint = { name: arrivalFlight.arrivalAirport || '機場', ...arrivalAirportCoords, label: '🛫', isVirtual: true, type: 'airport' };
-  } else if (today) {
-    const hOut = hotels?.find(h => h.checkOut === today);
-    if (hOut && hOut.lat && hOut.lng) {
-      startPoint = { name: hOut.name, lat: hOut.lat, lng: hOut.lng, label: '🏨', isVirtual: true, type: 'hotel' };
-    } else {
-      const hStay = hotels?.find(h => h.checkIn < today && h.checkOut > today);
-      if (hStay && hStay.lat && hStay.lng) {
-        startPoint = { name: hStay.name, lat: hStay.lat, lng: hStay.lng, label: '🏨', isVirtual: true, type: 'hotel' };
-      }
-    }
-  }
-
-  if (isLastDay && departureFlight && departureAirportCoords) {
-    endPoint = { name: departureFlight.departureAirport || '機場', ...departureAirportCoords, label: '🛬', isVirtual: true, type: 'airport' };
-  } else if (today) {
-    const hIn = hotels?.find(h => h.checkIn === today);
-    if (hIn && hIn.lat && hIn.lng) {
-      endPoint = { name: hIn.name, lat: hIn.lat, lng: hIn.lng, label: '🏨', isVirtual: true, type: 'hotel' };
-    } else {
-      const hStay = hotels?.find(h => h.checkIn < today && h.checkOut > today);
-      if (hStay && hStay.lat && hStay.lng) {
-        endPoint = { name: hStay.name, lat: hStay.lat, lng: hStay.lng, label: '🏨', isVirtual: true, type: 'hotel' };
-      }
-    }
-  }
-
-  return { startPoint, endPoint };
-}
-
 /* ===================== DAY DETAIL ===================== */
 function DayDetail({ dayId, tripId, days, allPlaces, readOnly = false }: { dayId: string; tripId: string; days: Day[]; allPlaces: Place[]; readOnly?: boolean }) {
-  const { role } = useAuth();
   const day = days.find(d => d.id === dayId);
   const placesInDay = allPlaces.filter(p => p.dayId === dayId);
   const places = placesInDay.filter(p => !p.isBackup);
@@ -493,6 +380,8 @@ function DayDetail({ dayId, tripId, days, allPlaces, readOnly = false }: { dayId
   );
 }
 
+/* ===================== HELPERS & SUB-COMPONENTS ===================== */
+
 function VirtualPointCard({ point }: { point: any }) {
   return (
     <div className="card virtual-card" style={{ marginBottom: 'var(--sp-sm)', border: '1px solid var(--accent)', background: 'rgba(var(--accent-rgb, 176,141,122), 0.05)' }}>
@@ -543,24 +432,22 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
   ) || [];
 
   const updatePlace = async (updates: Partial<Place>) => {
-    if (!tripId || !place.id) return;
-    // 移除所有值為 undefined 的欄位，避免 Firebase 報錯
+    if (readOnly || !tripId || !place.id) return;
     const cleanUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
       if (value !== undefined) acc[key] = value;
       return acc;
     }, {} as any);
-
     if (Object.keys(cleanUpdates).length === 0) return;
     await updateDoc(doc(firestore, 'trips', String(tripId), 'places', String(place.id!)), cleanUpdates);
   };
 
   const deletePlace = async () => {
-    if (!confirm('確定刪除此景點嗎？') || !tripId || !place.id) return;
+    if (readOnly || !confirm('確定刪除此景點嗎？') || !tripId || !place.id) return;
     await deleteDoc(doc(firestore, 'trips', String(tripId), 'places', String(place.id!)));
   };
 
   const addNote = async (type: 'text' | 'url') => {
-    if (!tripId || !place.id) return;
+    if (readOnly || !tripId || !place.id) return;
     await addDoc(collection(firestore, 'trips', String(tripId), 'notes'), {
       placeId: String(place.id), type, content: '', url: type === 'url' ? '' : null, sortOrder: notes?.length ?? 0,
     });
@@ -581,7 +468,6 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
           {(!place.lat || !place.lng) && place.name && !readOnly && (
             <div style={{ marginTop: 'var(--sp-xs)', fontSize: '0.75rem', color: 'var(--danger)', background: 'rgba(var(--danger-rgb, 239,68,68), 0.1)', padding: '4px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: 6 }}>
               <span>⚠️ 找不到地標</span>
-              <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>提示: 貼上 Google Maps 網址或座標可精確定位</span>
             </div>
           )}
           <div style={{ display: 'flex', gap: 'var(--sp-sm)', marginTop: 'var(--sp-xs)', fontSize: '0.8rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -592,11 +478,7 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
                 {place.travelMode === 'WALKING' ? '🚶 步行' : place.travelMode === 'DRIVING' ? '🚗 開車' : '🚇 大眾運輸'}
               </span>
             ) : (
-              <select 
-                value={place.travelMode || 'TRANSIT'} 
-                onChange={(e) => updatePlace({ travelMode: e.target.value as any })}
-                style={{ width: 'auto', fontSize: '0.75rem', padding: '2px 6px' }}
-              >
+              <select value={place.travelMode || 'TRANSIT'} onChange={(e) => updatePlace({ travelMode: e.target.value as any })} style={{ width: 'auto', fontSize: '0.75rem', padding: '2px 6px' }}>
                 <option value="WALKING">🚶 步行</option>
                 <option value="TRANSIT">🚇 大眾運輸</option>
                 <option value="DRIVING">🚗 開車</option>
@@ -620,54 +502,23 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
           {notes?.map(note => (
             <div key={note.id} style={{ display: 'flex', gap: 'var(--sp-xs)', alignItems: 'flex-start', marginTop: 'var(--sp-xs)', fontSize: '0.85rem' }}>
               <span style={{ color: 'var(--text-muted)' }}>{note.type === 'url' ? '🔗' : '📝'}</span>
-              {note.type === 'url' ? (
-                note.url ? <a href={note.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>{note.content || note.url}</a> : <InlineEdit value={note.url || note.content} onSave={(v) => updateDoc(doc(firestore, 'trips', String(tripId), 'notes', String(note.id!)), { url: v, content: v })} placeholder="https://..." readOnly={readOnly} />
+              {note.type === 'url' && note.url ? (
+                <a href={note.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>{note.content || note.url}</a>
               ) : (
-                <InlineEdit value={note.content} onSave={(v) => updateDoc(doc(firestore, 'trips', String(tripId), 'notes', String(note.id!)), { content: v })} placeholder="備註..." multiline readOnly={readOnly} />
+                <InlineEdit value={note.content || note.url} onSave={(v) => updateDoc(doc(firestore, 'trips', String(tripId), 'notes', String(note.id!)), { content: v })} placeholder="備註..." multiline readOnly={readOnly} />
               )}
-              {!readOnly && <button className="btn-icon" style={{ fontSize: '0.7rem', width: 24, height: 24, color: 'var(--text-muted)' }} onClick={() => deleteDoc(doc(firestore, 'trips', String(tripId), 'notes', String(note.id!)))}>✕</button>}
             </div>
           ))}
-
-          {/* Linked Checklist Items - Only visible to Admin */}
           {isAdmin && linkedChecklist.length > 0 && (
-            <div style={{ 
-              marginTop: 'var(--sp-sm)', 
-              background: 'rgba(var(--accent-rgb, 176,141,122), 0.05)', 
-              borderRadius: '8px',
-              padding: 'var(--sp-xs) var(--sp-sm)',
-              border: '1px solid rgba(var(--accent-rgb, 176,141,122), 0.1)'
-            }}>
-              <div style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 'bold', marginBottom: 4, opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                📌 關聯清單
-              </div>
+            <div style={{ marginTop: 'var(--sp-sm)', background: 'rgba(var(--accent-rgb, 176,141,122), 0.05)', borderRadius: '8px', padding: 'var(--sp-xs) var(--sp-sm)', border: '1px solid rgba(var(--accent-rgb, 176,141,122), 0.1)' }}>
               {linkedChecklist.map(item => (
                 <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.82rem', padding: '4px 0', opacity: item.checked ? 0.5 : 1 }}>
-                  <input 
-                    type="checkbox" 
-                    checked={item.checked} 
-                    onChange={(e) => updateDoc(doc(firestore, 'trips', String(tripId), 'checklistItems', String(item.id!)), { checked: e.target.checked })}
-                    style={{ width: 14, height: 14, cursor: 'pointer', accentColor: 'var(--accent)' }}
-                    disabled={readOnly}
-                  />
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ textDecoration: item.checked ? 'line-through' : 'none', color: 'var(--text-main)', fontWeight: 500 }}>
-                      {item.text}
-                    </span>
-                    {item.recipient && (
-                      <span style={{ fontSize: '0.7rem', color: 'var(--accent)', background: '#fff', border: '1px solid rgba(var(--accent-rgb, 176,141,122), 0.2)', padding: '0px 6px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                        🎁 {item.recipient}
-                      </span>
-                    )}
-                  </div>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', opacity: 0.7 }}>
-                    #{item.category}
-                  </span>
+                  <input type="checkbox" checked={item.checked} onChange={(e) => updateDoc(doc(firestore, 'trips', String(tripId), 'checklistItems', String(item.id!)), { checked: e.target.checked })} style={{ width: 14, height: 14 }} disabled={readOnly}/>
+                  <span>{item.text}</span>
                 </div>
               ))}
             </div>
           )}
-
           <div style={{ display: 'flex', gap: 'var(--sp-xs)', marginTop: 'var(--sp-sm)', flexWrap: 'wrap' }}>
             {!readOnly && isBackup && onPromote && <button className="btn btn-primary" onClick={onPromote} style={{ fontSize: '0.75rem' }}>➕ 加入行程</button>}
             {!readOnly && <button className="btn btn-secondary" onClick={() => addNote('text')} style={{ fontSize: '0.75rem' }}>📝 備註</button>}
@@ -683,42 +534,13 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
 function TravelSegment({ from, to, tripId }: { from: Place; to: Place; tripId: string }) {
   const dist = (from.lat && from.lng && to.lat && to.lng) ? calculateDistance(from.lat, from.lng, to.lat, to.lng) : null;
   if (!dist) return null;
-
   const mode = from.travelMode || 'TRANSIT';
   const labels: Record<string, string> = { WALKING: '🚶 步行', TRANSIT: '🚇 大眾運輸', DRIVING: '🚗 開車' };
-  
-  // Real-world Path Factor (approx. 1.4x straight-line distance)
-  const estimatedRoadDist = dist * 1.4;
-  const speeds: Record<string, number> = { WALKING: 5, TRANSIT: 15, DRIVING: 30 }; // adjusted km/h
-  
-  const timeMin = Math.round((estimatedRoadDist / (speeds[mode] || 15)) * 60);
-  const timeLabel = timeMin > 60 ? `${Math.floor(timeMin / 60)}h ${timeMin % 60}m` : `${timeMin}m`;
-
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from.name || from.address || '')}&destination=${encodeURIComponent(to.name || to.address || '')}&travelmode=${mode.toLowerCase()}`;
-
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from.name || '')}&destination=${encodeURIComponent(to.name || '')}&travelmode=${mode.toLowerCase()}`;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)', padding: 'var(--sp-xs) 0', marginLeft: 'var(--sp-xl)', opacity: 0.8 }}>
-      <a
-        href={directionsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          color: 'var(--accent)',
-          textDecoration: 'none',
-          fontSize: '0.75rem',
-          fontWeight: 500,
-          whiteSpace: 'nowrap',
-          background: 'rgba(var(--accent-rgb, 176,141,122), 0.1)',
-          padding: '4px 8px',
-          borderRadius: '12px'
-        }}
-      >
-        <span>{labels[mode]}</span>
-        <span>{dist.toFixed(1)} km</span>
-        <span>({timeLabel})</span>
+      <a href={directionsUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: '0.75rem' }}>
+        {labels[mode]} {dist.toFixed(1)} km
       </a>
       <div style={{ flex: 1, height: 1, borderTop: '1px dashed var(--border)' }} />
     </div>
@@ -726,10 +548,35 @@ function TravelSegment({ from, to, tripId }: { from: Place; to: Place; tripId: s
 }
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371; // km
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+}
+
+function useItineraryBounds(day: Day | undefined, days: Day[], hotels: Hotel[] | undefined, flights: Flight[] | undefined) {
+  const isFirstDay = days.length > 0 && days[0].id === day?.id;
+  const isLastDay = days.length > 0 && days[days.length - 1].id === day?.id;
+  const arrivalFlight = isFirstDay && flights?.length ? flights[0] : undefined;
+  const departureFlight = isLastDay && flights?.length ? flights[flights.length - 1] : undefined;
+  const arrivalAirportCoords = useGeocode(arrivalFlight?.arrivalAirport ? arrivalFlight.arrivalAirport + ' airport' : '');
+  const departureAirportCoords = useGeocode(departureFlight?.departureAirport ? departureFlight.departureAirport + ' airport' : '');
+  const today = day?.date;
+  let startPoint: any = null;
+  let endPoint: any = null;
+  if (isFirstDay && arrivalFlight && arrivalAirportCoords) {
+    startPoint = { name: arrivalFlight.arrivalAirport || '機場', ...arrivalAirportCoords, label: '🛫', isVirtual: true, type: 'airport' };
+  } else if (today) {
+    const hOut = hotels?.find(h => h.checkOut === today);
+    if (hOut && hOut.lat && hOut.lng) startPoint = { name: hOut.name, lat: hOut.lat, lng: hOut.lng, label: '🏨', isVirtual: true, type: 'hotel' };
+  }
+  if (isLastDay && departureFlight && departureAirportCoords) {
+    endPoint = { name: departureFlight.departureAirport || '機場', ...departureAirportCoords, label: '🛬', isVirtual: true, type: 'airport' };
+  } else if (today) {
+    const hIn = hotels?.find(h => h.checkIn === today);
+    if (hIn && hIn.lat && hIn.lng) endPoint = { name: hIn.name, lat: hIn.lat, lng: hIn.lng, label: '🏨', isVirtual: true, type: 'hotel' };
+  }
+  return { startPoint, endPoint };
 }

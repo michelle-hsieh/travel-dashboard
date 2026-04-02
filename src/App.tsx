@@ -34,23 +34,25 @@ function AppInner() {
   // ✅ 現在我們只在乎 Firebase 的字串 ID
   const handleSelectTrip = (firebaseId: string) => {
     setActiveTripId(firebaseId);
-    if (role !== 'guest') {
-      setPage('planner');
-    }
+    // 直接跳轉到行程頁面，不需檢查 role (權限會由子頁面自行判斷)
+    setPage('planner');
   };
 
   const allNavItems: { key: Page; icon: string; label: string }[] = [
     { key: 'home', icon: '🌍', label: '旅程' },
   ];
 
-  if (activeTripId && role !== 'guest') {
-    if (canRead('planner')) {
-      allNavItems.push({ key: 'planner', icon: '🗓️', label: '每日行程' });
-    }
-    if (canRead('flights') || canRead('hotels') || canRead('tickets')) {
+  // 只要有 activeTripId 且不是真正無權限的訪客，就顯示基本導航
+  if (activeTripId) {
+    // 先加入所有可能的導航項目，由子頁面內部的權限判斷顯示內容
+    // 這樣可以避免權限載入瞬間導致導航列閃爍或跳轉失敗
+    allNavItems.push({ key: 'planner', icon: '🗓️', label: '每日行程' });
+    
+    // 如果想要更嚴謹一點，可以判斷 canRead，但需確保載入中狀態不會誤判
+    if (role === 'admin' || canRead('flights') || canRead('hotels') || canRead('tickets')) {
       allNavItems.push({ key: 'logistics', icon: '📋', label: '準備' });
     }
-    if (canRead('resources')) {
+    if (role === 'admin' || canRead('resources')) {
       allNavItems.push({ key: 'resources', icon: '🔗', label: '連結' });
     }
     if (role === 'admin') {
