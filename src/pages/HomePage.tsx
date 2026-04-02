@@ -16,6 +16,7 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
   const { user } = useAuth();
   const isAnonGuest = role === 'guest' && !user;
   const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [newStart, setNewStart] = useState('');
   const [newEnd, setNewEnd] = useState('');
@@ -23,7 +24,8 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
   const { trips: firestoreTrips, loading } = useFirestoreTrips(user?.email ?? null);
 
   const createTrip = async () => {
-    if (!newName.trim() || !user) return;
+    if (!newName.trim() || !user || creating) return;
+    setCreating(true);
     const newTrip = {
       name: newName.trim(),
       startDate: newStart,
@@ -39,12 +41,14 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
     };
     try {
       const docRef = await addDoc(collection(firestore, 'trips'), newTrip);
+      setCreating(false);
       setShowCreate(false);
       setNewName('');
       setNewStart('');
       setNewEnd('');
       onSelectTrip(docRef.id);
     } catch (error) {
+      setCreating(false);
       console.error('建立行程失敗:', error);
       alert('建立行程失敗，請檢查網路連線。');
     }
@@ -98,15 +102,20 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
               <div className="form-group"><label>結束日期</label><input type="date" value={newEnd} onChange={e => setNewEnd(e.target.value)} /></div>
             </div>
             <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowCreate(false)}>取消</button>
-              <button className="btn btn-primary" onClick={createTrip}>建立</button>
+              <button className="btn btn-secondary" onClick={() => setShowCreate(false)} disabled={creating}>取消</button>
+              <button className="btn btn-primary" onClick={createTrip} disabled={creating}>
+                {creating ? <div className="spinner" style={{ width: 16, height: 16, borderTopColor: '#fff' }} /> : '建立'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {loading ? (
-        <div className="empty-state">⏳ 載入雲端行程中...</div>
+        <div className="loading-container">
+          <div className="spinner" style={{ width: 48, height: 48, borderWidth: 4 }} />
+          <div className="loading-pulse">載入雲端行程中...</div>
+        </div>
       ) : (
         <div style={{ display: 'grid', gap: 'var(--sp-md)' }}>
           {firestoreTrips.map((tripInfo) => {
@@ -164,7 +173,6 @@ function TripCard({ trip, isActive, isGuest, canAccess, onSelect, onDelete, onUp
       className="card"
       style={{
         cursor: disabled ? 'not-allowed' : 'pointer',
-        borderColor: isActive ? 'var(--accent)' : undefined,
         opacity: disabled ? 0.7 : 1,
       }}
       onClick={handleClick}
@@ -186,7 +194,6 @@ function TripCard({ trip, isActive, isGuest, canAccess, onSelect, onDelete, onUp
         </div>
         {!isGuest && (
           <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
-            {isActive && <span className="badge">目前選取</span>}
             {isOwner && <button className="btn-icon btn-danger" onClick={onDelete}>🗑️</button>}
           </div>
         )}
