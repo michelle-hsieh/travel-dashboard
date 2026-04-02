@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { collection, addDoc } from 'firebase/firestore';
+import { firestore } from './firebase';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginButton from './components/auth/LoginButton';
 import HomePage from './pages/HomePage';
@@ -38,6 +40,57 @@ function AppInner() {
     // 直接跳轉到行程頁面，不需檢查 role (權限會由子頁面自行判斷)
     setPage('planner');
   };
+
+  // ── AI 助理操作回調 ──
+  const handleAiNavigate = useCallback((p: Page) => {
+    setPage(p);
+  }, []);
+
+  const handleAiAddFlight = useCallback(async (data: any) => {
+    if (!activeTripId) throw new Error('沒有選取行程');
+    await addDoc(collection(firestore, 'trips', activeTripId, 'flights'), {
+      tripId: activeTripId,
+      airline: data.airline || '',
+      flightNo: data.flightNo || '',
+      departureAirport: data.departureAirport || '',
+      departureTime: data.departureTime || '',
+      arrivalAirport: data.arrivalAirport || '',
+      arrivalTime: data.arrivalTime || '',
+      confirmNo: data.confirmNo || '',
+      amount: data.amount || undefined,
+      currency: data.currency || undefined,
+      sortOrder: Date.now(),
+    });
+  }, [activeTripId]);
+
+  const handleAiAddHotel = useCallback(async (data: any) => {
+    if (!activeTripId) throw new Error('沒有選取行程');
+    await addDoc(collection(firestore, 'trips', activeTripId, 'hotels'), {
+      tripId: activeTripId,
+      name: data.name || '',
+      address: data.address || '',
+      checkIn: data.checkIn || '',
+      checkOut: data.checkOut || '',
+      confirmNo: data.confirmNo || '',
+      amount: data.amount || undefined,
+      currency: data.currency || undefined,
+      sortOrder: Date.now(),
+    });
+  }, [activeTripId]);
+
+  const handleAiAddChecklistItem = useCallback(async (data: any) => {
+    if (!activeTripId) throw new Error('沒有選取行程');
+    await addDoc(collection(firestore, 'trips', activeTripId, 'checklistItems'), {
+      tripId: activeTripId,
+      category: data.category || '行前準備',
+      text: data.text || '',
+      checked: false,
+      recipient: data.recipient || '',
+      amount: data.amount || undefined,
+      currency: data.currency || 'TWD',
+      sortOrder: Date.now(),
+    });
+  }, [activeTripId]);
 
   const leftTabs: { key: Page; icon: string; label: string }[] = [];
   const rightTabs: { key: Page; icon: string; label: string }[] = [];
@@ -124,7 +177,14 @@ function AppInner() {
         )}
       </main>
 
-      <ChatWidget tripContext={tripMeta ? { name: tripMeta.name, startDate: tripMeta.startDate, endDate: tripMeta.endDate } : undefined} />
+      <ChatWidget
+        tripContext={tripMeta ? { name: tripMeta.name, startDate: tripMeta.startDate, endDate: tripMeta.endDate } : undefined}
+        activeTripId={activeTripId}
+        onNavigate={handleAiNavigate}
+        onAddFlight={handleAiAddFlight}
+        onAddHotel={handleAiAddHotel}
+        onAddChecklistItem={handleAiAddChecklistItem}
+      />
 
       <nav className="bottom-nav">
         {allNavItems

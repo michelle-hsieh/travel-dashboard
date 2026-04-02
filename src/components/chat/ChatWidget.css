@@ -541,6 +541,45 @@
   background: rgba(194, 138, 138, 0.3);
 }
 
+/* --- Provider Tabs --- */
+.chat-provider-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+}
+
+.chat-provider-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.25s var(--ease);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.chat-provider-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.chat-provider-tab.active {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 4px 12px -2px var(--accent-glow);
+}
+
 /* --- Welcome Message --- */
 .chat-welcome {
   text-align: center;
@@ -588,6 +627,115 @@
 .chat-suggestion-btn:hover {
   background: var(--bg-hover);
   border-color: var(--accent-light);
+  color: var(--text-primary);
+}
+
+/* --- Attach Button --- */
+.chat-attach-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.chat-attach-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-light);
+  color: var(--text-primary);
+}
+
+.chat-attach-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Action Confirmation Card --- */
+.chat-action-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--accent-light);
+  border-radius: 14px;
+  padding: 14px;
+  animation: msgFadeIn 0.3s var(--ease);
+  box-shadow: 0 4px 16px -4px var(--accent-glow);
+}
+
+.chat-action-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.chat-action-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.chat-action-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.chat-action-desc {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: var(--bg-glass);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.chat-action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-action-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s var(--ease);
+}
+
+.chat-action-btn.confirm {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 4px 12px -2px var(--accent-glow);
+}
+
+.chat-action-btn.confirm:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px -2px var(--accent-glow);
+}
+
+.chat-action-btn.cancel {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.chat-action-btn.cancel:hover {
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 
