@@ -67,7 +67,7 @@ function AppInner() {
 
   return (
     <div className={`app-container ${isOffline ? 'offline-active' : ''}`}>
-      <div className="auth-bar" style={{ top: isOffline ? 28 : 0 }}>
+      <div className="auth-bar" style={{ top: isOffline ? 40 : 12 }}>
         <div className="auth-bar-left">
           {page !== 'home' && activeTripId && tripMeta?.name && (
             <div className="current-trip-label">

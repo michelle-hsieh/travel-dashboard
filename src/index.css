@@ -3,17 +3,17 @@
 :root {
   /* Colors — Low-saturation Morandi palette */
   --bg-primary: transparent;
-  --bg-secondary: rgba(245, 240, 235, 0.6);
-  --bg-card: rgba(255, 255, 255, 0.7); /* Increased opacity for solid backing */
-  --bg-card-hover: rgba(255, 255, 255, 0.85);
-  --bg-glass: rgba(255, 255, 255, 0.5);
-  --bg-input: rgba(255, 255, 255, 0.6);
-  --bg-hover: rgba(255, 255, 255, 0.7);
+  --bg-secondary: rgba(245, 240, 235, 0.7);
+  --bg-card: rgba(255, 255, 255, 0.8); /* Higher opacity for solid backing */
+  --bg-card-hover: rgba(255, 255, 255, 0.9);
+  --bg-glass: rgba(255, 255, 255, 0.6);
+  --bg-input: rgba(255, 255, 255, 0.7);
+  --bg-hover: rgba(255, 255, 255, 0.8);
   --bg-overlay: rgba(0, 0, 0, 0.5);
 
-  --text-primary: #000000; /* Pure black for maximum contrast */
-  --text-secondary: #2d2d2d;
-  --text-muted: #4b5563;
+  --text-primary: #000000; 
+  --text-secondary: #1a1a1a; /* Darker secondary text */
+  --text-muted: #374151; /* Darker muted text */
   --text-inverse: #ffffff;
 
   /* Morandi Accent: Deeper Dusty Blue */
@@ -300,27 +300,37 @@ input:focus, textarea:focus, select:focus {
   flex-direction: column;
   min-height: 100dvh;
 }
-
 .auth-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 var(--sp-lg);
+  padding: 0 20px;
   background: var(--bg-secondary);
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
-  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(25px) saturate(200%);
+  -webkit-backdrop-filter: blur(25px) saturate(200%);
+  border: 1px solid var(--border);
+  border-radius: 30px;
   position: sticky;
-  top: 0;
+  top: 12px;
   z-index: 150;
-  height: 54px;
-  transition: top 0.3s var(--ease);
+  height: 56px;
+  margin: 12px 16px;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s var(--ease);
+}
+
+@media (min-width: 768px) {
+  .auth-bar {
+    margin-left: 112px; /* sidebar 96px + margin 16px */
+    margin-right: 24px;
+    max-width: var(--max-width);
+  }
 }
 
 .auth-bar-left {
   display: flex;
   align-items: center;
-  gap: var(--sp-sm);
+  gap: var(--sp-md);
   flex: 1;
   min-width: 0;
 }
@@ -335,26 +345,32 @@ input:focus, textarea:focus, select:focus {
 .current-trip-label {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+  gap: 8px;
+  background: var(--bg-glass);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 240px;
+  transition: all 0.2s var(--ease);
 }
-
-.current-trip-label .trip-emoji {
-  font-size: 1.2rem;
+.current-trip-label:hover {
+  background: var(--bg-hover);
+  transform: translateY(-1px);
 }
 
 .auth-role-badge {
   font-size: 0.7rem;
-  background: var(--accent-glow);
-  color: var(--accent);
-  padding: 2px 8px;
+  background: var(--accent-gradient);
+  color: #fff;
+  padding: 3px 10px;
   border-radius: var(--radius-full);
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 4px 10px -2px var(--accent-glow);
 }
 
 .main-content {
@@ -849,9 +865,14 @@ input:focus, textarea:focus, select:focus {
     border-radius: 36px;
     gap: var(--sp-xs);
   }
-  .main-content, .auth-bar { 
-    margin-left: 96px; 
-    max-width: calc(var(--max-width) + 96px);
+  .main-content { 
+    margin-left: 112px; 
+    max-width: var(--max-width);
+  }
+  .auth-bar {
+    margin-left: 112px;
+    margin-right: 24px;
+    max-width: var(--max-width);
   }
 }
 
