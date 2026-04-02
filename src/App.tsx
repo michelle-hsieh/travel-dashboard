@@ -67,7 +67,7 @@ function AppInner() {
     <div className={`app-container ${isOffline ? 'offline-active' : ''}`}>
       <div className="auth-bar" style={{ top: isOffline ? 28 : 0 }}>
         <div className="auth-bar-left">
-          {activeTripId && tripMeta?.name && (
+          {page !== 'home' && activeTripId && tripMeta?.name && (
             <div className="current-trip-label">
               <span className="trip-emoji">✈️</span>
               <span className="trip-name">{tripMeta.name}</span>

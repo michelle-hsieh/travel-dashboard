@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { firestore } from '../firebase';
 import type { Trip, Role } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -60,7 +60,21 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
   const deleteTrip = async (id: string) => {
     if (!confirm('確定要刪除此行程嗎？這會刪除雲端上的所有資料！')) return;
     try {
-      // ✅ 直接刪除 Firestore 上的文件 (注意：這裡只刪了主文件，如果要刪除子集合，需要寫 Cloud Function 或在前端遞迴刪除)
+      // 刪除所有子集合中的文件，避免在 Firestore 留下無法輕易刪除的「幽靈文件」
+      const subcollections = [
+        'days', 'places', 'notes', 'attachments', 
+        'flights', 'hotels', 'tickets', 'checklistItems', 
+        'budgetItems', 'resources'
+      ];
+
+      for (const sub of subcollections) {
+        const subRef = collection(firestore, 'trips', id, sub);
+        const snap = await getDocs(subRef);
+        const deletePromises = snap.docs.map(d => deleteDoc(d.ref));
+        await Promise.all(deletePromises);
+      }
+
+      // 最後刪除主文件
       await deleteDoc(doc(firestore, 'trips', id));
       if (activeTripId === id) {
         onSelectTrip(''); // 取消選取
@@ -80,6 +94,8 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
   };
 
   const userEmailNorm = user?.email ? normalizeEmail(user.email) : '';
+  const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL ?? '').toLowerCase().trim();
+  const isGlobalAdmin = userEmailNorm === normalizeEmail(ADMIN_EMAIL);
 
   return (
     <div>
@@ -137,15 +153,23 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
       ) : (
         <div style={{ display: 'grid', gap: 'var(--sp-md)' }}>
           {firestoreTrips.map((tripInfo: FirestoreTripInfo, idx: number) => {
-            const isOwner = user?.uid === tripInfo.adminUid || (!tripInfo.adminUid && !isAnonGuest);
-            // 這裡已經保證有權限才會抓到，所以 canAccess 都是 true
+            const isOwner = user?.uid === tripInfo.adminUid || 
+                           (tripInfo.adminEmail && normalizeEmail(tripInfo.adminEmail) === userEmailNorm) ||
+                           (!tripInfo.adminUid && !isAnonGuest);
+            
+            // 判斷是否有權限進入：是擁有者、是全域管理員、或在協作者/成員名單內
+            const isCollaborator = !!(tripInfo.collaboratorEmails?.includes(userEmailNorm) || 
+                                     tripInfo.memberEmails?.includes(userEmailNorm));
+            
+            const canAccess = !!(isGlobalAdmin || isOwner || isCollaborator);
+
             return (
               <TripCard
                 key={tripInfo.firestoreId}
                 trip={tripInfo}
                 isActive={tripInfo.firestoreId === activeTripId}
                 isGuest={isAnonGuest}
-                canAccess={true}
+                canAccess={canAccess}
                 onSelect={() => onSelectTrip(tripInfo.firestoreId)}
                 onDelete={() => deleteTrip(tripInfo.firestoreId)}
                 onUpdate={(updates) => updateTrip(tripInfo.firestoreId, updates)}

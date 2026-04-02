@@ -53,11 +53,20 @@ service cloud.firestore {
     }
 
     function hasPermission(tripId, tab, level) {
+      let tripPath = /databases/$(database)/documents/trips/$(tripId);
+      let docExists = exists(tripPath);
+      let doc = docExists ? get(tripPath).data : null;
+      
+      // 1. 檢查特定協作者權限
       let collab = getCollab(tripId);
-      return collab != null && (
-        collab.get("permissions", {}).get(tab, "none") == level
-        || (level == 'read' && collab.get("permissions", {}).get(tab, "none") == 'write')
-      );
+      let specificPerm = (collab != null) ? collab.get("permissions", {}).get(tab, "none") : "none";
+      
+      // 2. 檢查全體預設權限
+      let publicPerm = (doc != null) ? doc.get("publicPermissions", {}).get(tab, "none") : "none";
+
+      // 只要其中一個滿足權限即可 (特定權限優先概念已包含在邏輯中)
+      return (specificPerm == level || (level == 'read' && specificPerm == 'write')) ||
+             (publicPerm == level || (level == 'read' && publicPerm == 'write'));
     }
 
     // Trips Collection

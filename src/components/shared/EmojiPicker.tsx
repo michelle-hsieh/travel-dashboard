@@ -14,9 +14,10 @@ interface EmojiPickerProps {
   value?: string;
   fallback: string;
   onSelect: (emoji: string | undefined) => void;
+  readOnly?: boolean;
 }
 
-export default function EmojiPicker({ value, fallback, onSelect }: EmojiPickerProps) {
+export default function EmojiPicker({ value, fallback, onSelect, readOnly = false }: EmojiPickerProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -34,7 +35,7 @@ export default function EmojiPicker({ value, fallback, onSelect }: EmojiPickerPr
   return (
     <div ref={containerRef} style={{ position: 'relative' }}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => !readOnly && setOpen(!open)}
         style={{
           width: 34,
           height: 34,
@@ -44,14 +45,14 @@ export default function EmojiPicker({ value, fallback, onSelect }: EmojiPickerPr
           color: 'inherit',
           fontSize: '1.4rem',
           fontWeight: 700,
-          cursor: 'pointer',
+          cursor: readOnly ? 'default' : 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           padding: 0,
           lineHeight: 1,
         }}
-        title="更換圖示"
+        title={readOnly ? undefined : "更換圖示"}
       >
         {value || fallback}
       </button>

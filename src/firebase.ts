@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 
 // TODO: Replace with your Firebase project config
 const firebaseConfig = {
@@ -12,16 +12,15 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID ?? '',
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-export const firestore = getFirestore(app);
 
-// 開啟 Firestore 原生離線快取 (Offline Persistence)
-enableIndexedDbPersistence(firestore).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('離線快取啟用失敗：可能有多個分頁同時開啟此 App。');
-  } else if (err.code === 'unimplemented') {
-    console.warn('離線快取啟用失敗：瀏覽器不支援此功能。');
-  }
-});
+// ✅ 避免重複初始化導致 Vite HMR 報錯
+export const firestore = getApps().length > 0 
+  ? getFirestore(app)
+  : initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });

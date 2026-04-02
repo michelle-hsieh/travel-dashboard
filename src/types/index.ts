@@ -9,6 +9,7 @@ export interface Trip {
   adminUid?: string;
   adminEmail?: string;
   collaborators?: Record<string, Collaborator>;
+  publicPermissions?: TabPermissions; // ✅ 新增：全體預設權限
   collaboratorEmails?: string[];
   memberEmails?: string[];
   daysCount?: number;
@@ -112,6 +113,8 @@ export interface ChecklistItem {
   sortOrder: number;
   amount?: number;
   currency?: string;
+  recipient?: string; // ✅ 新增：伴手禮對象
+  location?: string;  // ✅ 新增：購買地點
 }
 
 export interface BudgetItem {
@@ -149,6 +152,8 @@ export interface Collaborator {
 
 export interface TripMeta {
   name?: string; // ✅ 儲存旅程名稱
+  startDate?: string;
+  endDate?: string;
   adminUid: string;
   adminEmail: string;
   collaborators: Record<string, Collaborator>;

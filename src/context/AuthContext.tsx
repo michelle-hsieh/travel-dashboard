@@ -108,8 +108,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const data = snap.data() as TripMeta;
-        // ✅ 同步旅程名稱
-        setTripMeta({ ...data, name: (snap.data() as any).name });
+        // ✅ 同步旅程資訊
+        setTripMeta({ 
+          ...data, 
+          name: (snap.data() as any).name,
+          startDate: (snap.data() as any).startDate,
+          endDate: (snap.data() as any).endDate,
+        });
 
         if (!user) {
           setRole('guest');
@@ -121,10 +126,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Check if admin
         const isTripAdmin =
-          isWhitelistedAdmin(user) &&
-          (user.uid === data.adminUid ||
-            (data.adminEmail ? normalizeEmail(data.adminEmail) === userEmailNormalized : false) ||
-            !data.adminUid);
+          isWhitelistedAdmin(user) ||
+          user.uid === data.adminUid ||
+          (data.adminEmail ? normalizeEmail(data.adminEmail) === userEmailNormalized : false) ||
+          !data.adminUid;
 
         if (isTripAdmin) {
           setRole('admin');
@@ -140,6 +145,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (collab) {
           setRole('member');
           setPermissions(collab.permissions);
+        } else if (data.publicPermissions) {
+          // ✅ 採用全體預設權限
+          setRole('member');
+          setPermissions(data.publicPermissions);
         } else {
           setRole('guest');
           setPermissions(DEFAULT_PERMISSIONS);

@@ -43,19 +43,28 @@ function FitBounds({ places }: { places: { lat: number; lng: number }[] }) {
   const prevKey = useRef('');
 
   useEffect(() => {
-    if (places.length === 0) return;
+    if (!map || places.length === 0) return;
     const key = places.map(p => `${p.lat},${p.lng}`).join(';');
     if (key === prevKey.current) return;
     prevKey.current = key;
 
-    const bounds = L.latLngBounds(places.map(p => [p.lat, p.lng]));
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    try {
+      const bounds = L.latLngBounds(places.map(p => [p.lat, p.lng]));
+      // ✅ 停用動畫 (animate: false) 以避免切換頁面時的 Leaflet 內部競態條件
+      map.fitBounds(bounds, { 
+        padding: [40, 40], 
+        maxZoom: 15,
+        animate: false 
+      });
+    } catch (e) {
+      console.warn('Map fitBounds failed:', e);
+    }
   }, [places, map]);
 
   return null;
 }
 
-export default function RouteMap({ places }: RouteMapProps) {
+export function RouteMap({ places }: RouteMapProps) {
   if (places.length === 0) return null;
 
   const center: [number, number] = [places[0].lat, places[0].lng];
@@ -80,3 +89,5 @@ export default function RouteMap({ places }: RouteMapProps) {
     </MapContainer>
   );
 }
+
+export default RouteMap;

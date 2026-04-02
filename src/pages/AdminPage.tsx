@@ -4,14 +4,13 @@ import { firestore } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { PermissionLevel, PermissionTab, TabPermissions, Collaborator } from '../types';
 import { normalizeEmail, collaboratorKey } from '../utils/emails';
-import { db } from '../db/database'; // ✅ 新增引入本地 Dexie DB
 
 const TAB_LABELS: Record<PermissionTab, string> = {
   planner: '行程',
   flights: '航班',
   hotels: '住宿',
   tickets: '票券',
-  resources: '資源',
+  resources: '連結',
 };
 
 const PERMISSION_OPTIONS: { value: PermissionLevel; label: string }[] = [
@@ -20,8 +19,16 @@ const PERMISSION_OPTIONS: { value: PermissionLevel; label: string }[] = [
   { value: 'write', label: '讀寫' },
 ];
 
+const DEFAULT_PERMISSIONS: TabPermissions = {
+  planner: 'none',
+  flights: 'none',
+  hotels: 'none',
+  tickets: 'none',
+  resources: 'none',
+};
+
 export default function AdminPage({ tripId }: { tripId: string }) {
-  const { role, tripMeta, user } = useAuth();
+  const { role, tripMeta } = useAuth();
   const [newEmail, setNewEmail] = useState('');
   const [newPerms, setNewPerms] = useState<TabPermissions>({
     planner: 'read',
@@ -43,35 +50,44 @@ export default function AdminPage({ tripId }: { tripId: string }) {
   }
 
   const collaborators = tripMeta?.collaborators ?? {};
+  const publicPermissions = tripMeta?.publicPermissions ?? DEFAULT_PERMISSIONS;
   const collabList: (Collaborator & { key: string })[] = Object.entries(collaborators).map(
     ([key, val]) => ({ ...val, key })
   );
+
+  const savePublicPermissions = async (permissions: TabPermissions) => {
+    setSaving(true);
+    try {
+      const tripRef = doc(firestore, 'trips', tripId);
+      await updateDoc(tripRef, { publicPermissions: permissions });
+      setMessage('已更新全體預設權限');
+    } catch (err) {
+      console.error('Failed to save public permissions:', err);
+      setMessage('儲存失敗');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const saveCollaborator = async (email: string, permissions: TabPermissions) => {
     setSaving(true);
     setMessage('');
     try {
       const key = collaboratorKey(email);
-      // 向下相容：清理舊版帶底線的 Key
       const legacyKey = email.toLowerCase().split('.').join('_');
       const tripRef = doc(firestore, 'trips', tripId);
       const snap = await getDoc(tripRef);
       const existing = snap.exists() ? snap.data() : {};
 
-      // 複製一份現有的 collaborators
       const collabs = { ...(existing.collaborators ?? {}) };
-
-      // 新增或更新權限
       collabs[key] = { email: normalizeEmail(email), permissions };
 
-      // 如果存在舊版的 key，順手清掉
       if (legacyKey !== key && collabs[legacyKey]) {
         delete collabs[legacyKey];
       }
 
       const collaboratorEmails = Object.values(collabs).map((c: any) => normalizeEmail((c as Collaborator).email));
 
-      // 1. 上傳到雲端
       await updateDoc(tripRef, {
         collaborators: collabs,
         memberEmails: collaboratorEmails,
@@ -81,7 +97,7 @@ export default function AdminPage({ tripId }: { tripId: string }) {
       setMessage(`已更新 ${email} 的權限`);
     } catch (err) {
       console.error('Failed to save collaborator:', err);
-      setMessage('儲存失敗，請確認您有權限或稍後再試');
+      setMessage('儲存失敗');
     } finally {
       setSaving(false);
     }
@@ -94,16 +110,11 @@ export default function AdminPage({ tripId }: { tripId: string }) {
       const snap = await getDoc(tripRef);
       if (snap.exists()) {
         const data = snap.data();
-
-        // 複製一份現有的 collaborators
         const collabs = { ...(data.collaborators ?? {}) };
-
-        // 在本地端徹底刪除它
         delete collabs[key];
 
         const collaboratorEmails = Object.values(collabs).map((c: any) => normalizeEmail((c as Collaborator).email));
 
-        // 1. 上傳到雲端
         await updateDoc(tripRef, {
           collaborators: collabs,
           memberEmails: collaboratorEmails,
@@ -139,6 +150,35 @@ export default function AdminPage({ tripId }: { tripId: string }) {
       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 'var(--sp-md)' }}>
         設定協作者的存取權限；只有管理者能編輯，協作者無法看到清單與預算的細節。
       </p>
+
+      {/* Default Permissions for All Users */}
+      <div className="card" style={{ marginBottom: 'var(--sp-lg)', border: '1px solid var(--accent)', background: 'rgba(var(--accent-rgb, 176,141,122), 0.03)' }}>
+        <div className="section-title" style={{ color: 'var(--accent)', margin: 0, marginBottom: 'var(--sp-xs)' }}>🌐 全體預設權限 (所有人)</div>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 'var(--sp-sm)' }}>
+          設定「未在下方清單中」的登入使用者所擁有的權限。通常用於開放「所有人可讀取」。
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 'var(--sp-sm)' }}>
+          {(Object.keys(TAB_LABELS) as PermissionTab[]).map((tab) => (
+            <div key={tab} style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-xs)', fontSize: '0.85rem' }}>
+              <label style={{ minWidth: 60 }}>{TAB_LABELS[tab]}</label>
+              <select
+                value={publicPermissions[tab] || 'none'}
+                onChange={(e) => {
+                  const updated = { ...publicPermissions, [tab]: e.target.value as PermissionLevel };
+                  savePublicPermissions(updated);
+                }}
+                style={{ fontSize: '0.8rem', padding: '2px 4px' }}
+              >
+                {PERMISSION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Add new collaborator */}
       <div className="card" style={{ marginBottom: 'var(--sp-lg)' }}>

@@ -7,6 +7,8 @@ interface InlineEditProps {
   tag?: 'span' | 'h1' | 'h2' | 'h3' | 'p';
   className?: string;
   multiline?: boolean;
+  style?: React.CSSProperties;
+  readOnly?: boolean;
 }
 
 export default function InlineEdit({
@@ -16,6 +18,8 @@ export default function InlineEdit({
   tag: Tag = 'span',
   className = '',
   multiline = false,
+  style,
+  readOnly = false,
 }: InlineEditProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -49,7 +53,7 @@ export default function InlineEdit({
     }
   };
 
-  if (editing) {
+  if (editing && !readOnly) {
     if (multiline) {
       return (
         <textarea
@@ -60,7 +64,7 @@ export default function InlineEdit({
           onBlur={commit}
           onKeyDown={handleKeyDown}
           rows={3}
-          style={{ width: '100%', resize: 'vertical' }}
+          style={{ width: '100%', resize: 'vertical', ...style }}
         />
       );
     }
@@ -72,17 +76,28 @@ export default function InlineEdit({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={handleKeyDown}
+        style={style}
       />
     );
   }
 
+  const handleClick = () => {
+    if (!readOnly) {
+      setEditing(true);
+    }
+  };
+
   return (
     <Tag
-      className={`inline-edit ${className}`}
-      onClick={() => setEditing(true)}
-      tabIndex={0}
-      onFocus={() => setEditing(true)}
-      style={!value ? { color: 'var(--text-muted)' } : undefined}
+      className={`inline-edit ${className} ${readOnly ? 'read-only' : ''}`}
+      onClick={handleClick}
+      tabIndex={readOnly ? -1 : 0}
+      onFocus={handleClick}
+      style={{
+        ...(!value ? { color: 'var(--text-muted)' } : {}),
+        ...style,
+        cursor: readOnly ? 'default' : 'pointer'
+      }}
     >
       {value || placeholder}
     </Tag>
