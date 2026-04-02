@@ -505,7 +505,7 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
               {note.type === 'url' && note.url ? (
                 <a href={note.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>{note.content || note.url}</a>
               ) : (
-                <InlineEdit value={note.content || note.url} onSave={(v) => updateDoc(doc(firestore, 'trips', String(tripId), 'notes', String(note.id!)), { content: v })} placeholder="備註..." multiline readOnly={readOnly} />
+                <InlineEdit value={note.content || note.url || ''} onSave={(v) => updateDoc(doc(firestore, 'trips', String(tripId), 'notes', String(note.id!)), { content: v })} placeholder="備註..." multiline readOnly={readOnly} />
               )}
             </div>
           ))}
