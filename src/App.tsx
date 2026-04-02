@@ -6,6 +6,7 @@ import PlannerPage from './pages/PlannerPage';
 import LogisticsPage from './pages/LogisticsPage';
 import ResourcesPage from './pages/ResourcesPage';
 import AdminPage from './pages/AdminPage';
+import ChatWidget from './components/chat/ChatWidget';
 // 🚫 拔除：import { useFirestoreSync } from './hooks/useFirestoreSync';
 
 type Page = 'home' | 'planner' | 'logistics' | 'resources' | 'admin';
@@ -122,6 +123,8 @@ function AppInner() {
           <AdminPage tripId={activeTripId} />
         )}
       </main>
+
+      <ChatWidget tripContext={tripMeta ? { name: tripMeta.name, startDate: tripMeta.startDate, endDate: tripMeta.endDate } : undefined} />
 
       <nav className="bottom-nav">
         {allNavItems
