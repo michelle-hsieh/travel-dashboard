@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { OpenStreetMapProvider } from 'leaflet-geosearch';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { firestore } from '../firebase';
@@ -47,9 +47,12 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
   const allPlaces = useFirestoreQuery<Place>(tripId, 'places', 'sortOrder');
   const poolCount = allPlaces?.filter(p => p.dayId === POOL_DAY_ID).length ?? 0;
 
+  const syncingRef = useRef(false);
+
   // 自動同步 Days 數量
   useEffect(() => {
     if (!isAdmin || !tripId || !tripMeta?.startDate || !tripMeta?.endDate || !days) return;
+    if (syncingRef.current) return;
 
     const start = new Date(tripMeta.startDate);
     const end = new Date(tripMeta.endDate);
@@ -62,23 +65,59 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
       curr.setDate(curr.getDate() + 1);
     }
 
+    // Check if sync is needed
+    const needsCleanup = days.some((d, idx, arr) => d.date && arr.findIndex(x => x.date === d.date) !== idx);
+    const missingDays = expectedDates.some(ed => !days.find(d => d.date === ed));
+    const needsUpdate = days.some(d => {
+      const idx = expectedDates.indexOf(d.date!);
+      return idx !== -1 && (d.dayNumber !== idx + 1 || d.sortOrder !== idx);
+    });
+
+    if (!needsCleanup && !missingDays && !needsUpdate) return;
+
     const syncDays = async () => {
-      for (let i = 0; i < expectedDates.length; i++) {
-        const dateStr = expectedDates[i];
-        const existing = days.find(d => d.date === dateStr);
-        if (!existing) {
-          await addDoc(collection(firestore, 'trips', String(tripId), 'days'), {
-            tripId: String(tripId),
-            date: dateStr,
-            dayNumber: i + 1,
-            sortOrder: i,
-          });
-        } else if (existing.dayNumber !== i + 1 || existing.sortOrder !== i) {
-          await updateDoc(doc(firestore, 'trips', String(tripId), 'days', String(existing.id!)), {
-            dayNumber: i + 1,
-            sortOrder: i,
-          });
+      syncingRef.current = true;
+      try {
+        // 1. Cleanup duplicates
+        const dateCount: Record<string, Day[]> = {};
+        for (const d of days) {
+          if (d.date) {
+            if (!dateCount[d.date]) dateCount[d.date] = [];
+            dateCount[d.date].push(d);
+          }
         }
+        for (const date in dateCount) {
+          const arr = dateCount[date];
+          if (arr.length > 1) {
+            for (let i = 1; i < arr.length; i++) {
+              await deleteDoc(doc(firestore, 'trips', String(tripId), 'days', String(arr[i].id!)));
+            }
+          }
+        }
+
+        // Wait a bit for Firestore to propagate if needed, but we can also just local filter
+        const currentDays = days.filter(d => !d.date || dateCount[d.date][0].id === d.id);
+
+        // 2. Add missing and update order
+        for (let i = 0; i < expectedDates.length; i++) {
+          const dateStr = expectedDates[i];
+          const existing = currentDays.find(d => d.date === dateStr);
+          if (!existing) {
+            await addDoc(collection(firestore, 'trips', String(tripId), 'days'), {
+              tripId: String(tripId),
+              date: dateStr,
+              dayNumber: i + 1,
+              sortOrder: i,
+            });
+          } else if (existing.dayNumber !== i + 1 || existing.sortOrder !== i) {
+            await updateDoc(doc(firestore, 'trips', String(tripId), 'days', String(existing.id!)), {
+              dayNumber: i + 1,
+              sortOrder: i,
+            });
+          }
+        }
+      } finally {
+        syncingRef.current = false;
       }
     };
     syncDays();
