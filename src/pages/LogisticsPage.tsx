@@ -62,7 +62,7 @@ export default function LogisticsPage({ tripId, role, readOnly = false }: Logist
   }
 
   return (
-    <div>
+    <div className="logistics-page">
       <div className="page-header">
         <h1>行程準備 📋</h1>
       </div>

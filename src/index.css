@@ -145,7 +145,7 @@ button {
   font-size: inherit;
 }
 
-input, textarea, select {
+input, textarea, select, fieldset {
   font-family: inherit;
   font-size: inherit;
   color: var(--text-primary);
@@ -156,6 +156,13 @@ input, textarea, select {
   outline: none;
   transition: border-color var(--duration) var(--ease);
   width: 100%;
+}
+fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  width: auto;
 }
 input:focus, textarea:focus, select:focus {
   border-color: var(--border-focus);
@@ -181,6 +188,15 @@ input:focus, textarea:focus, select:focus {
 .card:hover {
   background: var(--bg-card-hover);
   box-shadow: var(--shadow-md);
+}
+
+/* Logistics Page Card Overrides */
+.logistics-page .card {
+  border: none;
+  box-shadow: none;
+}
+.logistics-page .card:hover {
+  box-shadow: none;
 }
 
 .btn {

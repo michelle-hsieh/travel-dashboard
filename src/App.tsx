@@ -128,16 +128,18 @@ function AppInner() {
       </main>
 
       <nav className="bottom-nav">
-        {allNavItems.map(item => (
-          <button
-            key={item.key}
-            className={`nav-item ${page === item.key ? 'active' : ''}`}
-            onClick={() => setPage(item.key)}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            {item.label}
-          </button>
-        ))}
+        {allNavItems
+          .filter(item => page !== 'home' || item.key === 'home')
+          .map(item => (
+            <button
+              key={item.key}
+              className={`nav-item ${page === item.key ? 'active' : ''}`}
+              onClick={() => setPage(item.key)}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
       </nav>
     </div>
   );
