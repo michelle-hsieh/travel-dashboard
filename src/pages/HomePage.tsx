@@ -83,7 +83,7 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
     <div>
       <div className="page-header">
         <h1>我的行程 🌍</h1>
-        {!isAnonGuest && user && (
+        {isGlobalAdmin && (
           <button className="btn btn-primary" onClick={() => setShowCreate(true)}>＋ 新增行程</button>
         )}
       </div>
