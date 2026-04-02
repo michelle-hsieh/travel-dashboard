@@ -86,7 +86,7 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
   return (
     <div>
       <div className="page-header">
-        <h1>我的行程 🌍</h1>
+        <h1>我的旅途 🌍</h1>
         {isGlobalAdmin && (
           <button className="btn btn-primary" onClick={() => setShowCreate(true)}>＋ 新增行程</button>
         )}
@@ -96,7 +96,7 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
         <div className="modal-overlay" onClick={() => setShowCreate(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2>新增行程</h2>
-            <div className="form-group"><label>行程名稱</label><input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. 2026 京都賞櫻" autoFocus onKeyDown={e => e.key === 'Enter' && createTrip()}/></div>
+            <div className="form-group"><label>行程名稱</label><input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. 2026 京都賞櫻" autoFocus onKeyDown={e => e.key === 'Enter' && createTrip()} /></div>
             <div className="form-row">
               <div className="form-group"><label>開始日期</label><input type="date" value={newStart} onChange={e => setNewStart(e.target.value)} /></div>
               <div className="form-group"><label>結束日期</label><input type="date" value={newEnd} onChange={e => setNewEnd(e.target.value)} /></div>
@@ -119,15 +119,15 @@ export default function HomePage({ onSelectTrip, activeTripId, role }: HomePageP
       ) : (
         <div style={{ display: 'grid', gap: 'var(--sp-md)' }}>
           {firestoreTrips.map((tripInfo) => {
-            const isOwner = user?.uid === tripInfo.adminUid || 
-                           (tripInfo.adminEmail && normalizeEmail(tripInfo.adminEmail) === userEmailNorm);
-            const isCollaborator = !!(tripInfo.collaboratorEmails?.includes(userEmailNorm) || 
-                                     tripInfo.memberEmails?.includes(userEmailNorm));
-            
+            const isOwner = user?.uid === tripInfo.adminUid ||
+              (tripInfo.adminEmail && normalizeEmail(tripInfo.adminEmail) === userEmailNorm);
+            const isCollaborator = !!(tripInfo.collaboratorEmails?.includes(userEmailNorm) ||
+              tripInfo.memberEmails?.includes(userEmailNorm));
+
             // ✅ 如果有設定全體預設權限 (只要有一項不是 none)，也允許進入
             const pub = tripInfo.publicPermissions;
-            const hasPublicAccess = pub && typeof pub === 'object' && 
-                                   Object.values(pub).some(v => v !== 'none');
+            const hasPublicAccess = pub && typeof pub === 'object' &&
+              Object.values(pub).some(v => v !== 'none');
 
             const canAccess = !!(isGlobalAdmin || isOwner || isCollaborator || hasPublicAccess);
 
@@ -180,7 +180,7 @@ function TripCard({ trip, isActive, isGuest, canAccess, onSelect, onDelete, onUp
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1 }}>
           {editing && !isGuest ? (
-            <input value={name} onChange={e => setName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} autoFocus onClick={e => e.stopPropagation()}/>
+            <input value={name} onChange={e => setName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} autoFocus onClick={e => e.stopPropagation()} />
           ) : (
             <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>
               {!canAccess && <span style={{ marginRight: 8 }}>🔒</span>}

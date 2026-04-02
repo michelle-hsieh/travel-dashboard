@@ -128,7 +128,7 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
   return (
     <div>
       <div className="page-header">
-        <h1>每日行程 🗓️</h1>
+        <h1>行程 🗓️</h1>
       </div>
 
       <div className="chip-bar">
@@ -158,12 +158,12 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
       {activeTab === 'pool' ? (
         <PoolSection tripId={tripId} days={days ?? []} allPlaces={allPlaces ?? []} readOnly={isReadOnly} />
       ) : activeTab != null ? (
-        <DayDetail 
-          dayId={activeTab} 
-          tripId={tripId} 
-          days={days ?? []} 
-          allPlaces={allPlaces ?? []} 
-          readOnly={isReadOnly} 
+        <DayDetail
+          dayId={activeTab}
+          tripId={tripId}
+          days={days ?? []}
+          allPlaces={allPlaces ?? []}
+          readOnly={isReadOnly}
         />
       ) : (
         <div className="empty-state">
@@ -216,11 +216,11 @@ function PoolSection({ tripId, days, allPlaces, readOnly = false }: { tripId: st
     return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
   }, []);
 
-  const allMapPoints = places.filter(p => p.lat && p.lng).map((p, i) => ({ 
-    name: p.name || p.address || `座標地點 (${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)})`, 
-    lat: p.lat!, 
-    lng: p.lng!, 
-    label: p.icon || numEmoji(i) 
+  const allMapPoints = places.filter(p => p.lat && p.lng).map((p, i) => ({
+    name: p.name || p.address || `座標地點 (${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)})`,
+    lat: p.lat!,
+    lng: p.lng!,
+    label: p.icon || numEmoji(i)
   }));
 
   return (
@@ -334,11 +334,11 @@ function DayDetail({ dayId, tripId, days, allPlaces, readOnly = false }: { dayId
 
   const allMapPoints = [
     ...(startPoint ? [startPoint] : []),
-    ...placesInDay.filter(p => p.lat && p.lng).map((p, i) => ({ 
-      name: p.name || p.address || `座標地點 (${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)})`, 
-      lat: p.lat!, 
-      lng: p.lng!, 
-      label: p.icon || numEmoji(i) 
+    ...placesInDay.filter(p => p.lat && p.lng).map((p, i) => ({
+      name: p.name || p.address || `座標地點 (${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)})`,
+      lat: p.lat!,
+      lng: p.lng!,
+      label: p.icon || numEmoji(i)
     })),
     ...(endPoint ? [endPoint] : [])
   ];
@@ -466,7 +466,7 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
 
   const isAdmin = role === 'admin';
 
-  const linkedChecklist = checklistItems?.filter(item => 
+  const linkedChecklist = checklistItems?.filter(item =>
     item.location && place.name && item.location.trim().toLowerCase() === place.name.trim().toLowerCase()
   ) || [];
 
@@ -552,7 +552,7 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
             <div style={{ marginTop: 'var(--sp-sm)', background: 'rgba(var(--accent-rgb, 176,141,122), 0.05)', borderRadius: '8px', padding: 'var(--sp-xs) var(--sp-sm)', border: '1px solid rgba(var(--accent-rgb, 176,141,122), 0.1)' }}>
               {linkedChecklist.map(item => (
                 <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.82rem', padding: '4px 0', opacity: item.checked ? 0.5 : 1 }}>
-                  <input type="checkbox" checked={item.checked} onChange={(e) => updateDoc(doc(firestore, 'trips', String(tripId), 'checklistItems', String(item.id!)), { checked: e.target.checked })} style={{ width: 14, height: 14 }} disabled={readOnly}/>
+                  <input type="checkbox" checked={item.checked} onChange={(e) => updateDoc(doc(firestore, 'trips', String(tripId), 'checklistItems', String(item.id!)), { checked: e.target.checked })} style={{ width: 14, height: 14 }} disabled={readOnly} />
                   <span>{item.text}</span>
                 </div>
               ))}

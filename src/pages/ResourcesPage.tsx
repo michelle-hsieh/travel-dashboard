@@ -36,7 +36,7 @@ export default function ResourcesPage({ tripId, readOnly = false }: ResourcesPag
   return (
     <div>
       <div className="page-header">
-        <h1>連結資源 🔗</h1>
+        <h1>連結 🔗</h1>
       </div>
 
       <div className="tabs">

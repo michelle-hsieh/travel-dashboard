@@ -144,7 +144,7 @@ export default function AdminPage({ tripId }: { tripId: string }) {
   return (
     <div>
       <div className="page-header">
-        <h1>授權管理</h1>
+        <h1>授權</h1>
       </div>
 
       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 'var(--sp-md)' }}>

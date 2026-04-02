@@ -34,7 +34,7 @@ export default function LogisticsPage({ tripId, role, readOnly = false }: Logist
   const tabs = allTabs.filter(t => {
     if (isAdmin) return true;
     if (t.key === 'budget') return true; // 預算暫時開放給所有能進入旅程的人
-    
+
     // 檢查是否有對應分頁的權限 (包含從 publicPermissions 繼承來的)
     if (t.permKey) {
       const p = permissions[t.permKey];
@@ -64,7 +64,7 @@ export default function LogisticsPage({ tripId, role, readOnly = false }: Logist
   return (
     <div className="logistics-page">
       <div className="page-header">
-        <h1>行程準備 📋</h1>
+        <h1>準備 📋</h1>
       </div>
 
       <div className="tabs">
@@ -264,18 +264,18 @@ function HotelCard({ hotel, onUpdate, onRemove }: { hotel: Hotel; onUpdate: (dat
           <div className="form-row" style={{ fontSize: '0.85rem', marginTop: 'var(--sp-xs)', gap: 'var(--sp-md)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>入住</span>
-              <input 
-                type="date" 
-                value={hotel.checkIn} 
+              <input
+                type="date"
+                value={hotel.checkIn}
                 onChange={e => onUpdate({ checkIn: e.target.value })}
                 style={{ fontSize: '0.85rem', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'inherit' }}
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>退房</span>
-              <input 
-                type="date" 
-                value={hotel.checkOut} 
+              <input
+                type="date"
+                value={hotel.checkOut}
                 onChange={e => onUpdate({ checkOut: e.target.value })}
                 style={{ fontSize: '0.85rem', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'inherit' }}
               />
@@ -326,9 +326,9 @@ function TicketsSection({ tripId, readOnly = false }: { tripId: string; readOnly
               <div className="form-row" style={{ fontSize: '0.85rem', marginTop: 'var(--sp-xs)', gap: 'var(--sp-md)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>📅 日期</span>
-                  <input 
-                    type="date" 
-                    value={t.date || ''} 
+                  <input
+                    type="date"
+                    value={t.date || ''}
                     onChange={e => update(t.id!, { date: e.target.value })}
                     disabled={readOnly}
                     style={{ fontSize: '0.85rem', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'inherit' }}
@@ -404,10 +404,10 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
 
         if (isSouvenir) {
           const recipients = ['all', ...new Set(catItems.map(i => i.recipient || '未設定').filter(Boolean))];
-          const filteredItems = souvenirFilter === 'all' 
-            ? catItems 
+          const filteredItems = souvenirFilter === 'all'
+            ? catItems
             : catItems.filter(i => (i.recipient || '未設定') === souvenirFilter);
-          
+
           const totalAmount = filteredItems.reduce((sum, i) => sum + (i.amount || 0), 0);
           const checkedCount = filteredItems.filter(i => i.checked).length;
 
@@ -416,17 +416,17 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-md)', flexWrap: 'wrap', gap: 'var(--sp-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)' }}>
                   <div className="section-title" style={{ margin: 0 }}>🎁 {cat}</div>
-                  <select 
-                    value={souvenirFilter} 
+                  <select
+                    value={souvenirFilter}
                     onChange={(e) => setSouvenirFilter(e.target.value)}
-                    style={{ 
+                    style={{
                       width: 'auto',
-                      fontSize: '0.75rem', 
-                      padding: '2px 10px', 
-                      borderRadius: '12px', 
-                      border: '1px solid var(--border)', 
-                      background: 'var(--bg-card)', 
-                      color: 'var(--accent)', 
+                      fontSize: '0.75rem',
+                      padding: '2px 10px',
+                      borderRadius: '12px',
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg-card)',
+                      color: 'var(--accent)',
                       fontWeight: 600,
                       cursor: 'pointer'
                     }}
@@ -454,26 +454,26 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
                     {filteredItems.map(item => (
                       <tr key={item.id} style={{ borderBottom: '1px solid var(--border)', opacity: item.checked ? 0.6 : 1 }}>
                         <td style={{ textAlign: 'center', padding: '8px' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={item.checked} 
-                            onChange={e => update(item.id!, { checked: e.target.checked })} 
+                          <input
+                            type="checkbox"
+                            checked={item.checked}
+                            onChange={e => update(item.id!, { checked: e.target.checked })}
                             style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
                           />
                         </td>
                         <td style={{ padding: '8px' }}>
-                          <InlineEdit 
-                            value={item.text} 
-                            onSave={v => update(item.id!, { text: v })} 
-                            placeholder="商品名稱..." 
+                          <InlineEdit
+                            value={item.text}
+                            onSave={v => update(item.id!, { text: v })}
+                            placeholder="商品名稱..."
                             style={{ textDecoration: item.checked ? 'line-through' : 'none', fontWeight: 500 }}
                           />
                         </td>
                         <td style={{ padding: '8px' }}>
-                          <InlineEdit 
-                            value={item.recipient || ''} 
-                            onSave={v => update(item.id!, { recipient: v })} 
-                            placeholder="誰要的?" 
+                          <InlineEdit
+                            value={item.recipient || ''}
+                            onSave={v => update(item.id!, { recipient: v })}
+                            placeholder="誰要的?"
                           />
                         </td>
                         <td style={{ padding: '8px' }}>
@@ -491,10 +491,10 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
                         <td style={{ padding: '8px', textAlign: 'right' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
                             <span style={{ opacity: 0.5, fontSize: '0.7rem' }}>$</span>
-                            <InlineEdit 
-                              value={item.amount != null ? `${item.amount}` : ''} 
-                              onSave={v => update(item.id!, { amount: v ? parseFloat(v) || 0 : undefined })} 
-                              placeholder="0" 
+                            <InlineEdit
+                              value={item.amount != null ? `${item.amount}` : ''}
+                              onSave={v => update(item.id!, { amount: v ? parseFloat(v) || 0 : undefined })}
+                              placeholder="0"
                               style={{ textAlign: 'right', width: '40px' }}
                             />
                           </div>
@@ -528,33 +528,33 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
               {cat} <span className="badge">{checked}/{catItems.length}</span>
             </div>
             {catItems.map(item => (
-              <div key={item.id} className={`checklist-row ${item.checked ? 'checked' : ''}`} style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                padding: 'var(--sp-sm)', 
+              <div key={item.id} className={`checklist-row ${item.checked ? 'checked' : ''}`} style={{
+                display: 'flex',
+                flexDirection: 'column',
+                padding: 'var(--sp-sm)',
                 borderBottom: '1px solid var(--border)',
                 background: item.checked ? 'rgba(0,0,0,0.02)' : 'transparent',
                 transition: 'background 0.2s'
               }}>
                 <div style={{ display: 'flex', width: '100%', alignItems: 'center', gap: 'var(--sp-sm)' }}>
-                  <input 
-                    type="checkbox" 
-                    checked={item.checked} 
-                    onChange={e => update(item.id!, { checked: e.target.checked })} 
+                  <input
+                    type="checkbox"
+                    checked={item.checked}
+                    onChange={e => update(item.id!, { checked: e.target.checked })}
                     style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--accent)' }}
                   />
                   <div style={{ flex: 1 }}>
-                    <InlineEdit 
-                      value={item.text} 
-                      onSave={v => update(item.id!, { text: v })} 
-                      placeholder="輸入項目名稱..." 
-                      className="checklist-text" 
-                      style={{ 
-                        fontSize: '0.95rem', 
-                        fontWeight: 500, 
+                    <InlineEdit
+                      value={item.text}
+                      onSave={v => update(item.id!, { text: v })}
+                      placeholder="輸入項目名稱..."
+                      className="checklist-text"
+                      style={{
+                        fontSize: '0.95rem',
+                        fontWeight: 500,
                         color: item.checked ? 'var(--text-muted)' : 'inherit',
                         textDecoration: item.checked ? 'line-through' : 'none'
-                      }} 
+                      }}
                     />
                   </div>
                   <div style={{ display: 'flex', gap: 'var(--sp-xs)', alignItems: 'center' }}>

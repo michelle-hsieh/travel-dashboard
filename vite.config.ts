@@ -11,7 +11,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'Personal Travel Dashboard — 個人旅行儀表板',
+        name: 'Personal Travel Dashboard — 個人旅遊儀表板',
         short_name: 'Travel Plan',
         description: 'An offline-first interactive travel itinerary manager',
         theme_color: '#6c63ff',

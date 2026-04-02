@@ -38,27 +38,23 @@ function AppInner() {
     setPage('planner');
   };
 
-  const allNavItems: { key: Page; icon: string; label: string }[] = [
-    { key: 'home', icon: '🌍', label: '旅程' },
-  ];
+  const leftTabs: { key: Page; icon: string; label: string }[] = [];
+  const rightTabs: { key: Page; icon: string; label: string }[] = [];
 
-  // 只要有 activeTripId 且不是真正無權限的訪客，就顯示基本導航
   if (activeTripId) {
-    // 先加入所有可能的導航項目，由子頁面內部的權限判斷顯示內容
-    // 這樣可以避免權限載入瞬間導致導航列閃爍或跳轉失敗
-    allNavItems.push({ key: 'planner', icon: '🗓️', label: '每日行程' });
-    
-    // 如果想要更嚴謹一點，可以判斷 canRead，但需確保載入中狀態不會誤判
+    leftTabs.push({ key: 'planner', icon: '🗓️', label: '行程' });
     if (role === 'admin' || canRead('flights') || canRead('hotels') || canRead('tickets')) {
-      allNavItems.push({ key: 'logistics', icon: '📋', label: '準備' });
+      leftTabs.push({ key: 'logistics', icon: '📋', label: '準備' });
     }
     if (role === 'admin' || canRead('resources')) {
-      allNavItems.push({ key: 'resources', icon: '🔗', label: '連結' });
+      rightTabs.push({ key: 'resources', icon: '🔗', label: '連結' });
     }
     if (role === 'admin') {
-      allNavItems.push({ key: 'admin', icon: '🔑', label: '授權' });
+      rightTabs.push({ key: 'admin', icon: '🔑', label: '授權' });
     }
   }
+
+  const allNavItems = [...leftTabs, { key: 'home', icon: '🌍', label: '旅程' } as const, ...rightTabs];
 
   useEffect(() => {
     const accessible = allNavItems.some((item) => item.key === page);
@@ -133,11 +129,11 @@ function AppInner() {
           .map(item => (
             <button
               key={item.key}
-              className={`nav-item ${page === item.key ? 'active' : ''}`}
+              className={`nav-item ${page === item.key ? 'active' : ''} ${item.key === 'home' ? 'nav-home' : ''}`}
               onClick={() => setPage(item.key)}
             >
               <span className="nav-icon">{item.icon}</span>
-              {item.label}
+              <span className="nav-label">{item.label}</span>
             </button>
           ))}
       </nav>
