@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function normalizeEmail(email) {
+      let emailStr = (email == null) ? "" : (email + "");
+      let lower = emailStr.lower().trim();
+      let parts = lower.split("@");
+      let local = (parts.size() > 0) ? parts[0] : "";
+      let domain = (parts.size() > 1) ? ("@" + parts[1]) : "";
+      let plusIndex = local.indexOf("+");
+      let localNoPlus = (plusIndex >= 0) ? local.substring(0, plusIndex) : local;
+      let normalizedDomain = (domain == "@googlemail.com") ? "@gmail.com" : domain;
+      return localNoPlus + normalizedDomain;
+    }
+
+    function isAdmin(tripId) {
+      let authed = request.auth != null;
+      let tripPath = /databases/$(database)/documents/trips/$(tripId);
+      let docExists = exists(tripPath);
+      let doc = docExists ? get(tripPath).data : null;
+      let hasEmail = authed && request.auth.token.email != null;
+      let userEmail = hasEmail ? normalizeEmail(request.auth.token.email) : "";
+      let adminUid = (doc != null) ? doc.get("adminUid", "") : "";
+      let adminEmail = (doc != null) ? doc.get("adminEmail", "") : "";
+      return authed && docExists && (
+        (adminUid == request.auth.uid) ||
+        (hasEmail && adminEmail != "" && normalizeEmail(adminEmail) == userEmail)
+      );
+    }
+
+    function getCollab(tripId) {
+      let tripPath = /databases/$(database)/documents/trips/$(tripId);
+      let docExists = exists(tripPath);
+      let doc = docExists ? get(tripPath).data : null;
+      let hasEmail = request.auth != null && request.auth.token.email != null;
+      let normalized = hasEmail ? normalizeEmail(request.auth.token.email) : "";
+      let key1 = normalized.replace("\\.", "_").replace("\\.", "_").replace("\\.", "_");
+      let collabs = (doc != null) ? doc.get("collaborators", {}) : {};
+      let c1 = collabs.get(normalized, null);
+      let c2 = c1 != null ? c1 : collabs.get(key1, null);
+      return hasEmail ? (c2 != null ? c2 : collabs.get(normalized.lower(), null)) : null;
+    }
+
+    function isCollaborator(tripId) {
+      return request.auth != null && getCollab(tripId) != null;
+    }
+
+    function hasPermission(tripId, tab, level) {
+      let tripPath = /databases/$(database)/documents/trips/$(tripId);
+      let docExists = exists(tripPath);
+      let doc = docExists ? get(tripPath).data : null;
+      
+      // 1. 檢查特定協作者權限
+      let collab = getCollab(tripId);
+      let specificPerm = (collab != null) ? collab.get("permissions", {}).get(tab, "none") : "none";
+      
+      // 2. 檢查全體預設權限 (所有人)
+      let publicPerm = (doc != null) ? doc.get("publicPermissions", {}).get(tab, "none") : "none";
+
+      return (specificPerm == level || (level == 'read' && specificPerm == 'write')) ||
+             (publicPerm == level || (level == 'read' && publicPerm == 'write'));
+    }
+
+    // Trips Collection
+    match /trips/{tripId} {
+      allow read: if true; 
+      allow write: if request.auth != null && (
+        !exists(/databases/$(database)/documents/trips/$(tripId)) || isAdmin(tripId)
+      );
+
+      // --- SUBCOLLECTIONS ---
+      match /checklistItems/{itemId} { 
+        allow read: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'read'); 
+        allow write: if isAdmin(tripId);
+      }
+      match /days/{dayId} {
+        allow read: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'read');
+        allow write: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'write');
+      }
+      match /places/{placeId} {
+        allow read: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'read');
+        allow write: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'write');
+      }
+      match /flights/{flightId} {
+        allow read: if isAdmin(tripId) || hasPermission(tripId, 'flights', 'read');
+        allow write: if isAdmin(tripId) || hasPermission(tripId, 'flights', 'write');
+      }
+      match /hotels/{hotelId} {
+        allow read: if isAdmin(tripId) || hasPermission(tripId, 'hotels', 'read');
+        allow write: if isAdmin(tripId) || hasPermission(tripId, 'hotels', 'write');
+      }
+      match /tickets/{ticketId} {
+        allow read: if isAdmin(tripId) || hasPermission(tripId, 'tickets', 'read');
+        allow write: if isAdmin(tripId) || hasPermission(tripId, 'tickets', 'write');
+      }
+      match /budgetItems/{itemId} {
+        allow read: if isAdmin(tripId) || isCollaborator(tripId);
+        allow write: if isAdmin(tripId);
+      }
+      match /resources/{resourceId} {
+        allow read: if isAdmin(tripId) || hasPermission(tripId, 'resources', 'read');
+        allow write: if isAdmin(tripId) || hasPermission(tripId, 'resources', 'write');
+      }
+      match /notes/{noteId} { allow read, write: if request.auth != null || hasPermission(tripId, 'planner', 'read'); }
+      match /attachments/{attachId} { allow read, write: if request.auth != null || hasPermission(tripId, 'planner', 'read'); }
+    }
+  }
+}
