@@ -15,7 +15,7 @@ import {
   getSelectedModel,
   setSelectedModel,
   sendMessage,
-  extractPdfText,
+  extractFileText,
 } from '../../services/aiService';
 import './ChatWidget.css';
 
@@ -34,6 +34,8 @@ export interface ChatWidgetProps {
   onAddFlight?: (data: any) => Promise<void>;
   onAddHotel?: (data: any) => Promise<void>;
   onAddChecklistItem?: (data: any) => Promise<void>;
+  onImportTrip?: (jsonData: any) => Promise<string>;
+  onGeocodeTrip?: (tripId: string) => Promise<void>;
 }
 
 type View = 'chat' | 'settings' | 'setup';
@@ -62,6 +64,8 @@ export default function ChatWidget({
   onAddFlight,
   onAddHotel,
   onAddChecklistItem,
+  onImportTrip,
+  onGeocodeTrip,
 }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [provider, setProviderState] = useState<AIProvider>(getProvider);
@@ -75,12 +79,13 @@ export default function ChatWidget({
   const [keyInput, setKeyInput] = useState('');
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [attachedPdf, setAttachedPdf] = useState<{ name: string; text: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const providerInfo = PROVIDER_INFO[provider];
+  const providerInfo = PROVIDER_INFO[provider] || PROVIDER_INFO.openai;
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -93,6 +98,17 @@ export default function ChatWidget({
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, view]);
+
+  // Handle Esc key to close chat
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen]);
 
   // ── Provider switching ──
   const handleSwitchProvider = useCallback((p: AIProvider) => {
@@ -132,12 +148,16 @@ export default function ChatWidget({
     setSelectedModel(m, provider);
   }, [provider]);
 
+// Helper to match tool names robustly (handles case-insensitivity and Gemini's mangled names)
+const normalizeToolName = (name: string) => name.toLowerCase().replace(/_/g, '');
+
   // ── Parse tool calls into PendingActions ──
   const parseToolCalls = useCallback((toolCalls: ToolCall[]): PendingAction[] => {
     return toolCalls.map(tc => {
       const args = JSON.parse(tc.function.arguments);
-      switch (tc.function.name) {
-        case 'navigate_to_page': {
+      const name = normalizeToolName(tc.function.name);
+      switch (name) {
+        case 'navigatetopage': {
           const pageLabels: Record<string, string> = {
             home: '旅程', planner: '行程', logistics: '準備',
             resources: '連結', admin: '授權',
@@ -148,22 +168,35 @@ export default function ChatWidget({
             data: args,
           };
         }
-        case 'add_flight':
+        case 'addflight':
           return {
             toolCall: tc, label: '新增航班', icon: '✈️',
             description: `${args.airline || ''} ${args.flightNo || ''} — ${args.departureAirport || '?'} → ${args.arrivalAirport || '?'}${args.departureTime ? ` (${args.departureTime})` : ''}`,
             data: args,
           };
-        case 'add_hotel':
+        case 'addhotel':
           return {
             toolCall: tc, label: '新增住宿', icon: '🏨',
             description: `${args.name || ''}${args.checkIn ? ` ${args.checkIn}` : ''}${args.checkOut ? ` ~ ${args.checkOut}` : ''}`,
             data: args,
           };
-        case 'add_checklist_item':
+        case 'addchecklistitem':
           return {
             toolCall: tc, label: '新增清單項目', icon: '✅',
             description: `[${args.category || '待辦'}] ${args.text || ''}`,
+            data: args,
+          };
+        case 'createfulltrip':
+        case 'createfulltriptripdata': // Handle Gemini's mangled name
+          return {
+            toolCall: tc, label: '建立完整旅程', icon: '✨',
+            description: `從 PDF 建立新旅程：「${args.tripData?.name || '未命名'}」${args.tripData?.startDate ? ` (${args.tripData.startDate} ~)` : ''}`,
+            data: args,
+          };
+        case 'geocodetrip':
+          return {
+            toolCall: tc, label: '在地圖標註景點', icon: '📍',
+            description: '自動查詢所有景點的經緯度座標並標註在地圖上（此過程較慢）。',
             data: args,
           };
         default:
@@ -177,30 +210,58 @@ export default function ChatWidget({
 
   // ── Execute a tool call ──
   const executeTool = useCallback(async (tc: ToolCall): Promise<string> => {
-    const args = JSON.parse(tc.function.arguments);
-    switch (tc.function.name) {
-      case 'navigate_to_page':
-        onNavigate?.(args.page as Page);
-        return `已切換到「${args.page}」頁面。`;
-      case 'add_flight':
-        if (!activeTripId) return '錯誤：目前沒有選取任何行程。';
-        await onAddFlight?.(args);
-        return `已成功新增航班 ${args.airline} ${args.flightNo}。`;
-      case 'add_hotel':
-        if (!activeTripId) return '錯誤：目前沒有選取任何行程。';
-        await onAddHotel?.(args);
-        return `已成功新增住宿「${args.name}」。`;
-      case 'add_checklist_item':
-        if (!activeTripId) return '錯誤：目前沒有選取任何行程。';
-        await onAddChecklistItem?.(args);
-        return `已成功新增清單項目「${args.text}」。`;
-      default:
-        return `未知的工具: ${tc.function.name}`;
+    try {
+      const args = JSON.parse(tc.function.arguments);
+      console.log(`Executing tool: ${tc.function.name}`, args);
+      const name = normalizeToolName(tc.function.name);
+      switch (name) {
+        case 'navigatetopage':
+          onNavigate?.(args.page as Page);
+          return `已切換到「${args.page}」頁面。`;
+        case 'addflight':
+          if (!activeTripId) return '錯誤：目前沒有選取任何行程。';
+          await onAddFlight?.(args);
+          return `已成功新增航班 ${args.airline} ${args.flightNo}。`;
+        case 'addhotel':
+          if (!activeTripId) return '錯誤：目前沒有選取任何行程。';
+          await onAddHotel?.(args);
+          return `已成功新增住宿「${args.name}」。`;
+        case 'addchecklistitem':
+          if (!activeTripId) return '錯誤：目前沒有選取任何行程。';
+          await onAddChecklistItem?.(args);
+          return `已成功新增清單項目「${args.text}」。`;
+        case 'createfulltrip':
+        case 'createfulltriptripdata':
+          if (!onImportTrip) return '錯誤：目前環境不支援自動匯入。';
+          // Gemini's mangled name usually puts the property content directly in the args or keeps it nested
+          const tripData = args.tripData || args; 
+          console.log('[ChatWidget] tripData keys:', Object.keys(tripData));
+          console.log('[ChatWidget] tripData.subcollections?', tripData.subcollections ? Object.keys(tripData.subcollections) : 'NO subcollections key');
+          console.log('[ChatWidget] Direct array keys:', Object.keys(tripData).filter(k => Array.isArray(tripData[k])));
+          console.log('[ChatWidget] Full tripData:', JSON.stringify(tripData).slice(0, 2000));
+          const newId = await onImportTrip(tripData);
+          return `🎉 已成功建立並切換至新旅程：「${tripData.name}」。
+提示：如果您在列表看到兩個同名旅程，請選擇最下方的一個。
+旅程 ID: ${newId}`;
+        case 'geocodetrip':
+          if (!onGeocodeTrip) return '錯誤：目前環境不支援自動標註。';
+          if (!activeTripId) return '錯誤：目前沒有選取任何行程。';
+          // Always use the real activeTripId — AI often fabricates fake IDs
+          await onGeocodeTrip(activeTripId);
+          return '正在背景查詢座標並標註地圖，請稍候...';
+        default:
+          return `未知的工具: ${tc.function.name}`;
+      }
+    } catch (err: any) {
+      console.error('Tool execution error:', err);
+      return `執行失敗: ${err.message}`;
     }
-  }, [activeTripId, onNavigate, onAddFlight, onAddHotel, onAddChecklistItem]);
+  }, [activeTripId, onNavigate, onAddFlight, onAddHotel, onAddChecklistItem, onImportTrip, onGeocodeTrip]);
 
   // ── Handle confirming or rejecting a pending action ──
   const handleConfirmAction = useCallback(async (action: PendingAction, approved: boolean) => {
+    if (isLoading) return; // Prevent double-clicks
+    setIsLoading(true);
     setPendingActions(prev => prev.filter(a => a.toolCall.id !== action.toolCall.id));
 
     let toolResult: string;
@@ -220,7 +281,7 @@ export default function ChatWidget({
 
     const updatedApiMsgs = [...apiMessages, toolResultMsg];
     setApiMessages(updatedApiMsgs);
-    setIsLoading(true);
+    // Already set to true at the start
 
     try {
       const result = await sendMessage({ messages: updatedApiMsgs, tripContext, useTools: false });
@@ -296,23 +357,82 @@ export default function ChatWidget({
   // ── Send message ──
   const handleSend = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
-    if (!text || isLoading) return;
+    if ((!text && !attachedPdf) || isLoading) return;
 
     if (!overrideText) setInput('');
+    const currentAttached = attachedPdf;
+    setAttachedPdf(null);
     setError(null);
 
+    const displayContent = currentAttached 
+      ? `📄 [附件：${currentAttached.name}]\n${text}`
+      : text;
+
     const userMsg: DisplayMessage = {
-      id: `usr-${Date.now()}`, role: 'user', content: text, timestamp: Date.now(),
+      id: `usr-${Date.now()}`, role: 'user', content: displayContent, timestamp: Date.now(),
     };
     setMessages(prev => [...prev, userMsg]);
 
-    const userApiMsg: ChatMessage = { role: 'user', content: text };
+    const apiContent = currentAttached
+      ? `${text}\n\n[系統提示：使用者上傳了 PDF 檔案 "${currentAttached.name}"，內容如下]\n\n--- PDF Content ---\n${currentAttached.text}\n--- End of PDF Content ---`
+      : text;
+
+    const userApiMsg: ChatMessage = { role: 'user', content: apiContent };
     const updatedApiMsgs = [...apiMessages, userApiMsg];
     setApiMessages(updatedApiMsgs);
     setIsLoading(true);
 
     try {
       const result = await sendMessage({ messages: updatedApiMsgs, tripContext, useTools: true });
+
+      // Fallback: If no toolCalls but content contains JSON, treat it as a tool call
+      if (!result.toolCalls || result.toolCalls.length === 0) {
+        // Try to find JSON in markdown blocks (with or without 'json' tag)
+        const jsonBlockRegex = /```(?:json)?\s+([\s\S]*?)\s+```/i;
+        let match = result.content?.match(jsonBlockRegex);
+        let rawJson = match ? match[1].trim() : '';
+
+        // If no markdown block, look for raw { ... } that contains trip-related keys
+        if (!rawJson && result.content?.includes('{') && result.content?.includes('}')) {
+          const firstBrace = result.content.indexOf('{');
+          const lastBrace = result.content.lastIndexOf('}');
+          if (firstBrace < lastBrace) {
+            const potentialJson = result.content.slice(firstBrace, lastBrace + 1);
+            if (potentialJson.includes('"tripData"') || potentialJson.includes('"page"') || potentialJson.includes('"airline"')) {
+              rawJson = potentialJson;
+            }
+          }
+        }
+
+        if (rawJson) {
+          try {
+            const parsed = JSON.parse(rawJson);
+            
+            // Detect which tool fits the data
+            let syntheticName = '';
+            if (parsed.tripData) syntheticName = 'create_full_trip';
+            else if (parsed.page) syntheticName = 'navigate_to_page';
+            else if (parsed.airline && parsed.flightNo) syntheticName = 'add_flight';
+            else if (parsed.checkIn && parsed.checkOut) syntheticName = 'add_hotel';
+            else if (parsed.text && parsed.category) syntheticName = 'add_checklist_item';
+            else if (parsed.tripId) syntheticName = 'geocode_trip';
+
+            if (syntheticName) {
+              console.log(`Fallback detected: Treating response as ${syntheticName}`);
+              result.toolCalls = [{
+                id: `fallback-${Date.now()}`,
+                type: 'function',
+                function: {
+                  name: syntheticName,
+                  arguments: JSON.stringify(parsed)
+                }
+              }];
+            }
+          } catch (e) {
+            console.warn('Failed to parse fallback JSON from content:', e);
+          }
+        }
+      }
 
       if (result.toolCalls && result.toolCalls.length > 0) {
         await handleToolResult(result, updatedApiMsgs);
@@ -329,16 +449,32 @@ export default function ChatWidget({
       setError(err.message || '發送失敗，請稍後再試。');
       setIsLoading(false);
     }
-  }, [input, isLoading, apiMessages, tripContext, handleToolResult]);
+  }, [input, attachedPdf, isLoading, apiMessages, tripContext, handleToolResult]);
 
   // ── PDF Upload ──
+  const SUPPORTED_TYPES = [
+    'application/pdf',
+    'text/plain',
+    'text/markdown',
+    'text/csv',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ];
+  const SUPPORTED_EXT = ['.pdf', '.txt', '.md', '.markdown', '.csv', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx'];
+
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (fileInputRef.current) fileInputRef.current.value = '';
 
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      setError('目前僅支援 PDF 檔案上傳。');
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    const typeOk = SUPPORTED_TYPES.includes(file.type) || SUPPORTED_EXT.includes(ext);
+    if (!typeOk) {
+      setError(`不支援此檔案格式。支援：PDF、Word、PPT、Excel (建議另存 CSV)、Markdown、TXT`);
       return;
     }
 
@@ -346,49 +482,21 @@ export default function ChatWidget({
     setError(null);
 
     try {
-      const pdfText = await extractPdfText(file);
-      if (!pdfText.trim()) {
-        setError('無法從 PDF 中提取文字。');
+      const fileText = await extractFileText(file);
+      if (!fileText.trim()) {
+        setError('無法從此檔案中提取文字。請確認檔案不是純圖片或加密文件。');
         setUploadingPdf(false);
         return;
       }
 
-      const userMsg: DisplayMessage = {
-        id: `usr-pdf-${Date.now()}`, role: 'user',
-        content: `📄 已上傳 PDF 檔案：${file.name}\n（請幫我分析內容並填入行程）`,
-        timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, userMsg]);
-
-      const userApiMsg: ChatMessage = {
-        role: 'user',
-        content: `The user uploaded a PDF file named "${file.name}". Below is the extracted text content from the PDF. Please analyze it and extract any travel-related information (flights, hotels, etc.), then use the appropriate tools to add them to the trip.\n\n--- PDF Content ---\n${pdfText.substring(0, 4000)}\n--- End of PDF Content ---`,
-      };
-
-      const updatedApiMsgs = [...apiMessages, userApiMsg];
-      setApiMessages(updatedApiMsgs);
-      setIsLoading(true);
+      setAttachedPdf({ name: file.name, text: fileText });
       setUploadingPdf(false);
-
-      const result = await sendMessage({ messages: updatedApiMsgs, tripContext, useTools: true });
-
-      if (result.toolCalls && result.toolCalls.length > 0) {
-        await handleToolResult(result, updatedApiMsgs);
-      } else {
-        setMessages(prev => [...prev, {
-          id: `asst-pdf-${Date.now()}`, role: 'assistant',
-          content: result.content || '無法從 PDF 中辨識出相關旅行資訊。',
-          timestamp: Date.now(),
-        }]);
-        setApiMessages(prev => [...prev, { role: 'assistant', content: result.content || '' }]);
-        setIsLoading(false);
-      }
+      setTimeout(() => inputRef.current?.focus(), 100);
     } catch (err: any) {
-      setError(`PDF 處理失敗: ${err.message}`);
+      setError(`檔案處理失敗: ${err.message}`);
       setUploadingPdf(false);
-      setIsLoading(false);
     }
-  }, [apiMessages, tripContext, handleToolResult]);
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -448,7 +556,7 @@ export default function ChatWidget({
             <div className="chat-setup">
               {/* Provider Toggle in Setup */}
               <div className="chat-provider-tabs">
-                {(['openai', 'gemini'] as AIProvider[]).map(p => (
+                {(['openai', 'gemini', 'cerebras'] as AIProvider[]).map(p => (
                   <button
                     key={p}
                     className={`chat-provider-tab ${provider === p ? 'active' : ''}`}
@@ -463,6 +571,8 @@ export default function ChatWidget({
               <p>
                 {provider === 'gemini'
                   ? <>Google AI Studio 提供免費額度，<br />非常適合一般使用！</>
+                  : provider === 'cerebras'
+                  ? <>Cerebras 提供全球最快的推理速度，<br />支援 Llama 3.3, DeepSeek 等頂尖模型。</>
                   : <>請到 OpenAI Platform 申請 API Key，<br />需要先儲值 $5 美金以上。</>
                 }
               </p>
@@ -495,7 +605,7 @@ export default function ChatWidget({
               <div className="chat-settings-section">
                 <h4>AI 供應商</h4>
                 <div className="chat-provider-tabs">
-                  {(['openai', 'gemini'] as AIProvider[]).map(p => (
+                  {(['openai', 'gemini', 'cerebras'] as AIProvider[]).map(p => (
                     <button
                       key={p}
                       className={`chat-provider-tab ${provider === p ? 'active' : ''}`}
@@ -590,10 +700,18 @@ export default function ChatWidget({
                     </div>
                     <div className="chat-action-desc">{action.description}</div>
                     <div className="chat-action-buttons">
-                      <button className="chat-action-btn confirm" onClick={() => handleConfirmAction(action, true)}>
+                      <button 
+                        className="chat-action-btn confirm" 
+                        onClick={() => handleConfirmAction(action, true)}
+                        disabled={isLoading}
+                      >
                         ✓ 確認新增
                       </button>
-                      <button className="chat-action-btn cancel" onClick={() => handleConfirmAction(action, false)}>
+                      <button 
+                        className="chat-action-btn cancel" 
+                        onClick={() => handleConfirmAction(action, false)}
+                        disabled={isLoading}
+                      >
                         ✕ 取消
                       </button>
                     </div>
@@ -613,9 +731,15 @@ export default function ChatWidget({
               </div>
 
               {/* Hidden file input */}
-              <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={handleFileUpload} />
+              <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.markdown,.csv,.doc,.docx,.ppt,.pptx,.xls,.xlsx" style={{ display: 'none' }} onChange={handleFileUpload} />
 
               <div className="chat-input-area">
+                {attachedPdf && (
+                  <div className="chat-attachment-preview">
+                    <span className="chat-attachment-name">📄 {attachedPdf.name}</span>
+                    <button className="chat-attachment-remove" onClick={() => setAttachedPdf(null)}>✕</button>
+                  </div>
+                )}
                 <div className="chat-input-row">
                   <button
                     className="chat-attach-btn"
@@ -638,7 +762,7 @@ export default function ChatWidget({
                   <button
                     className="chat-send-btn"
                     onClick={() => handleSend()}
-                    disabled={!input.trim() || isLoading || uploadingPdf}
+                    disabled={(!input.trim() && !attachedPdf) || isLoading || uploadingPdf}
                     title="送出"
                   >
                     ➤

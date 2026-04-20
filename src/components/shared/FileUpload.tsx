@@ -4,16 +4,17 @@ import { firestore } from '../../firebase';
 import type { ParentType } from '../../types';
 
 interface FileUploadProps {
+  tripId: string;
   parentId: string; // ✅ 改為 string
   parentType: ParentType;
 }
 
-export default function FileUpload({ parentId, parentType }: FileUploadProps) {
+export default function FileUpload({ tripId, parentId, parentType }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !tripId) return;
 
     setUploading(true);
     try {
@@ -27,7 +28,7 @@ export default function FileUpload({ parentId, parentType }: FileUploadProps) {
         const base64data = reader.result;
 
         // 直接存進 Firestore
-        await addDoc(collection(firestore, 'attachments'), {
+        await addDoc(collection(firestore, 'trips', String(tripId), 'attachments'), {
           parentId,
           parentType,
           fileName: file.name,

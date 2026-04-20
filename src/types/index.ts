@@ -22,6 +22,14 @@ export interface Day {
   date: string;
   dayNumber: number;
   sortOrder: number;
+  notes?: string;
+}
+
+export interface TripNote {
+  id?: string;
+  tripId: string;
+  content: string;
+  sortOrder: number;
 }
 
 export interface Place {
@@ -56,7 +64,8 @@ export interface Attachment {
   parentType: ParentType;
   fileName: string;
   mimeType: string;
-  blob: Blob;
+  blob?: Blob;
+  blobBase64?: string;
   thumbnail?: Blob;
   createdAt: number;
 }
@@ -115,6 +124,7 @@ export interface ChecklistItem {
   currency?: string;
   recipient?: string;
   location?: string;
+  notes?: string;
 }
 
 export interface BudgetItem {
@@ -136,7 +146,7 @@ export interface Resource {
   sortOrder: number;
 }
 
-export type ParentType = 'place' | 'flight' | 'hotel' | 'ticket';
+export type ParentType = 'place' | 'flight' | 'hotel' | 'ticket' | 'checklistItem';
 
 export type Role = 'admin' | 'member' | 'guest';
 export type PermissionLevel = 'none' | 'read' | 'write';

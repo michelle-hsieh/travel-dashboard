@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface InlineEditProps {
   value: string;
@@ -7,6 +9,7 @@ interface InlineEditProps {
   tag?: 'span' | 'h1' | 'h2' | 'h3' | 'p';
   className?: string;
   multiline?: boolean;
+  markdown?: boolean;
   style?: React.CSSProperties;
   readOnly?: boolean;
 }
@@ -18,6 +21,7 @@ export default function InlineEdit({
   tag: Tag = 'span',
   className = '',
   multiline = false,
+  markdown = false,
   style,
   readOnly = false,
 }: InlineEditProps) {
@@ -86,6 +90,28 @@ export default function InlineEdit({
       setEditing(true);
     }
   };
+
+  if (markdown && !editing) {
+    return (
+      <div 
+        className={`inline-edit markdown-content ${className} ${readOnly ? 'read-only' : ''}`}
+        onClick={handleClick}
+        tabIndex={readOnly ? -1 : 0}
+        onFocus={handleClick}
+        style={{
+          ...(!value ? { color: 'var(--text-muted)' } : {}),
+          ...style,
+          cursor: readOnly ? 'default' : 'pointer'
+        }}
+      >
+        {value ? (
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+        ) : (
+          placeholder
+        )}
+      </div>
+    );
+  }
 
   return (
     <Tag

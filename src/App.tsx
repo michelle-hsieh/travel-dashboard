@@ -9,6 +9,8 @@ import LogisticsPage from './pages/LogisticsPage';
 import ResourcesPage from './pages/ResourcesPage';
 import AdminPage from './pages/AdminPage';
 import ChatWidget from './components/chat/ChatWidget';
+import ScrollToTop from './components/shared/ScrollToTop';
+import { importTrip, geocodeTripPlaces } from './utils/tripIO';
 // 🚫 拔除：import { useFirestoreSync } from './hooks/useFirestoreSync';
 
 type Page = 'home' | 'planner' | 'logistics' | 'resources' | 'admin';
@@ -17,7 +19,7 @@ function AppInner() {
   const [page, setPage] = useState<Page>('home');
   // ✅ 統一使用 Firestore 字串 ID
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const { role, canRead, canWrite, activeTripId, setActiveTripId, tripMeta } = useAuth();
+  const { role, user, canRead, canWrite, activeTripId, setActiveTripId, tripMeta } = useAuth();
 
   const plannerWritable = canWrite('planner');
   const logisticsWritable = canWrite('flights') || canWrite('hotels') || canWrite('tickets');
@@ -57,8 +59,8 @@ function AppInner() {
       arrivalAirport: data.arrivalAirport || '',
       arrivalTime: data.arrivalTime || '',
       confirmNo: data.confirmNo || '',
-      amount: data.amount || undefined,
-      currency: data.currency || undefined,
+      amount: typeof data.amount === 'number' ? data.amount : null,
+      currency: data.currency || null,
       sortOrder: Date.now(),
     });
   }, [activeTripId]);
@@ -72,8 +74,8 @@ function AppInner() {
       checkIn: data.checkIn || '',
       checkOut: data.checkOut || '',
       confirmNo: data.confirmNo || '',
-      amount: data.amount || undefined,
-      currency: data.currency || undefined,
+      amount: typeof data.amount === 'number' ? data.amount : null,
+      currency: data.currency || null,
       sortOrder: Date.now(),
     });
   }, [activeTripId]);
@@ -86,11 +88,31 @@ function AppInner() {
       text: data.text || '',
       checked: false,
       recipient: data.recipient || '',
-      amount: data.amount || undefined,
+      amount: typeof data.amount === 'number' ? data.amount : null,
       currency: data.currency || 'TWD',
       sortOrder: Date.now(),
     });
   }, [activeTripId]);
+
+  const handleAiImportTrip = useCallback(async (tripData: any) => {
+    if (!user) throw new Error('請先登入');
+    const jsonStr = JSON.stringify(tripData);
+    const newId = await importTrip(jsonStr, user.uid, user.email || '');
+    setActiveTripId(newId);
+    setPage('planner');
+    return newId;
+  }, [user, setActiveTripId]);
+
+  const handleAiGeocodeTrip = useCallback(async (tripId: string) => {
+    // Run in background without blocking
+    geocodeTripPlaces(tripId, (msg) => {
+      // We could use a global toast or status bar here. 
+      // For now, let's log to console or provide feedback via AI if possible.
+      console.log('Geocoding progress:', msg);
+    }).catch(err => {
+      console.error('Geocoding background error:', err);
+    });
+  }, []);
 
   const leftTabs: { key: Page; icon: string; label: string }[] = [];
   const rightTabs: { key: Page; icon: string; label: string }[] = [];
@@ -119,12 +141,20 @@ function AppInner() {
     <div className={`app-container ${isOffline ? 'offline-active' : ''}`}>
       <div className="auth-bar" style={{ top: isOffline ? 40 : 12 }}>
         <div className="auth-bar-left">
-          {page !== 'home' && activeTripId && tripMeta?.name && (
-            <div className="current-trip-label">
-              <span className="trip-emoji">✈️</span>
-              <span className="trip-name">{tripMeta.name}</span>
-            </div>
-          )}
+          {page !== 'home' && activeTripId && tripMeta?.name && (() => {
+            const currentTab = allNavItems.find(item => item.key === page);
+            return (
+              <div className="current-trip-label">
+                <span className="trip-emoji" style={{ fontSize: '0.9rem' }}>✈️</span>
+                <span className="trip-name-text">{tripMeta.name}</span>
+                <span className="breadcrumb-sep">›</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="tab-emoji" style={{ fontSize: '0.85rem' }}>{currentTab?.icon}</span>
+                  <span className="tab-name-text">{currentTab?.label}</span>
+                </div>
+              </div>
+            );
+          })()}
         </div>
         <div className="auth-bar-right">
           {role !== 'guest' && (
@@ -184,6 +214,8 @@ function AppInner() {
         onAddFlight={handleAiAddFlight}
         onAddHotel={handleAiAddHotel}
         onAddChecklistItem={handleAiAddChecklistItem}
+        onImportTrip={handleAiImportTrip}
+        onGeocodeTrip={handleAiGeocodeTrip}
       />
 
       <nav className="bottom-nav">
@@ -200,6 +232,7 @@ function AppInner() {
             </button>
           ))}
       </nav>
+      <ScrollToTop />
     </div>
   );
 }

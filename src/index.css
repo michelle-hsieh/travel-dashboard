@@ -1,34 +1,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Colors — Low-saturation Morandi palette */
+  /* Colors — Liquid Glass Sunset palette (Pastel Orange & Soft Pink) */
   --bg-primary: transparent;
-  --bg-secondary: rgba(245, 240, 235, 0.7);
-  --bg-card: rgba(255, 255, 255, 0.8); /* Higher opacity for solid backing */
-  --bg-card-hover: rgba(255, 255, 255, 0.9);
-  --bg-glass: rgba(255, 255, 255, 0.6);
-  --bg-input: rgba(255, 255, 255, 0.7);
-  --bg-hover: rgba(255, 255, 255, 0.8);
-  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --bg-secondary: rgba(253, 246, 245, 0.42); /* Warmer base tint */
+  --bg-card: rgba(255, 255, 255, 0.38);
+  --bg-card-hover: rgba(255, 255, 255, 0.52);
+  --bg-glass: rgba(255, 255, 255, 0.28);
+  --bg-input: rgba(255, 255, 255, 0.45);
+  --bg-hover: rgba(255, 255, 255, 0.48);
+  --bg-overlay: rgba(30, 15, 10, 0.45); /* Warm overlay shadow */
 
-  --text-primary: #000000; 
-  --text-secondary: #1a1a1a; /* Darker secondary text */
-  --text-muted: #374151; /* Darker muted text */
+  --text-primary: #1a100c; /* Deep warm brown instead of stark black */
+  --text-secondary: #3b2c27;
+  --text-muted: #5e4a43; /* Darkened from #6b5851 for better contrast */
   --text-inverse: #ffffff;
 
-  /* Morandi Accent: Deeper Dusty Blue */
-  --accent: #4a6678; 
-  --accent-light: #6b8a9e;
-  --accent-glow: rgba(107, 138, 158, 0.25);
-  --accent-gradient: linear-gradient(135deg, rgba(107, 138, 158, 0.9), rgba(139, 167, 184, 0.8));
+  /* Sunset Accent: Soft Sunset Orange to Pink */
+  --accent: #f28c82; /* Warm Pastel Orange/Pink */
+  --accent-light: #fbaba4;
+  --accent-glow: rgba(242, 140, 130, 0.45);
+  --accent-gradient: linear-gradient(135deg, rgba(245, 156, 147, 0.9), rgba(251, 178, 185, 0.8));
 
-  --success: rgba(143, 168, 155, 0.85); /* Sage Green */
-  --warning: rgba(212, 184, 150, 0.85); /* Muted Sand */
-  --danger: rgba(194, 138, 138, 0.85);  /* Muted Rose */
-  --info: rgba(139, 167, 184, 0.85);    /* Dusty Blue */
+  --success: rgba(143, 168, 155, 0.85);
+  --warning: rgba(255, 213, 153, 0.85); /* Brighter warm sand */
+  --danger: rgba(194, 138, 138, 0.85);
+  --info: rgba(139, 167, 184, 0.85);
 
-  --border: rgba(255, 255, 255, 0.35);
-  --border-focus: rgba(139, 167, 184, 0.5);
+  /* Liquid Glass borders — bright edge highlights */
+  --border: rgba(255, 255, 255, 0.5);
+  --border-focus: rgba(139, 167, 184, 0.6);
+  --border-glow: rgba(255, 255, 255, 0.7);
+
+  /* Liquid Glass inner glow */
+  --glass-inner-glow: inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -1px 1px rgba(255, 255, 255, 0.15);
+  --glass-outer-glow: 0 0 0 0.5px rgba(255, 255, 255, 0.6);
 
   /* Spacing */
   --sp-xs: 4px;
@@ -38,22 +44,28 @@
   --sp-xl: 32px;
   --sp-2xl: 48px;
 
-  /* Radius — iOS 16 style larger corners */
-  --radius-sm: 10px;
-  --radius-md: 18px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
+  /* Radius — Liquid rounded corners */
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
   --radius-full: 9999px;
 
-  /* Shadows — Subtle iOS style */
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.15);
-  --shadow-glow: 0 0 20px var(--accent-glow);
+  /* Shadows — Liquid Glass depth */
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-glow: 0 0 24px var(--accent-glow);
+
+  /* Backdrop — Liquid Glass blur */
+  --glass-blur: blur(28px) saturate(200%);
+  --glass-blur-heavy: blur(40px) saturate(220%);
+  --glass-blur-light: blur(16px) saturate(180%);
 
   /* Transitions */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --duration: 300ms;
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration: 350ms;
   --duration-slow: 500ms;
 
   /* Layout */
@@ -62,34 +74,39 @@
   --max-width: 960px;
 }
 
-/* Dark Morandi + Glassmorphism */
+/* Dark Morandi + Liquid Glass */
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-primary: transparent;
-    --bg-secondary: rgba(42, 38, 40, 0.4);
-    --bg-card: rgba(54, 49, 51, 0.4);
-    --bg-card-hover: rgba(64, 58, 60, 0.5);
-    --bg-glass: rgba(255, 255, 255, 0.1);
-    --bg-input: rgba(255, 255, 255, 0.12);
-    --bg-hover: rgba(255, 255, 255, 0.15);
-    --bg-overlay: rgba(42, 38, 40, 0.7);
+    --bg-secondary: rgba(48, 35, 33, 0.35); /* Warmer plum/brown background */
+    --bg-card: rgba(58, 42, 40, 0.32);
+    --bg-card-hover: rgba(71, 51, 48, 0.45);
+    --bg-glass: rgba(255, 245, 242, 0.08); /* Warm white glass */
+    --bg-input: rgba(255, 245, 242, 0.1);
+    --bg-hover: rgba(255, 245, 242, 0.14);
+    --bg-overlay: rgba(25, 12, 10, 0.75);
 
-    --text-primary: #e8e2dd;
-    --text-secondary: #b5ada8;
-    --text-muted: #8a8280;
-    --text-inverse: #2a2628;
+    --text-primary: #fcf4f2;
+    --text-secondary: #dfcfcb;
+    --text-muted: #bda9a5; /* Brightened from #a6928e for better contrast */
+    --text-inverse: #2e1d1a;
 
-    --accent: #a3b8c5;
-    --accent-light: #b8c9d4;
-    --accent-glow: rgba(163, 184, 197, 0.25);
-    --accent-gradient: linear-gradient(135deg, rgba(163, 184, 197, 0.8), rgba(184, 201, 212, 0.7));
+    /* Dark Mode Accent: Dreamy Rose Pink */
+    --accent: #e28e93;
+    --accent-light: #f4b4b8;
+    --accent-glow: rgba(226, 142, 147, 0.35);
+    --accent-gradient: linear-gradient(135deg, rgba(226, 142, 147, 0.8), rgba(238, 162, 166, 0.7));
 
-    --border: rgba(255, 255, 255, 0.15);
+    --border: rgba(255, 255, 255, 0.18);
     --border-focus: rgba(163, 184, 197, 0.5);
+    --border-glow: rgba(255, 255, 255, 0.3);
 
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+    --glass-inner-glow: inset 0 1px 1px rgba(255, 255, 255, 0.2), inset 0 -1px 1px rgba(255, 255, 255, 0.05);
+    --glass-outer-glow: 0 0 0 0.5px rgba(255, 255, 255, 0.2);
+
+    --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.55);
   }
 }
 
@@ -133,6 +150,21 @@ a:hover {
   text-decoration: underline;
 }
 
+.badge {
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-left: var(--sp-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
 button {
   font-family: inherit;
   cursor: pointer;
@@ -167,29 +199,30 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* Glassmorphism utility */
+/* Liquid Glass utility */
 .glass {
   background: var(--bg-card);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid var(--border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--glass-outer-glow), var(--glass-inner-glow), var(--shadow-sm);
 }
 
 .card {
   background: var(--bg-card);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid var(--border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--sp-md);
   transition: all var(--duration) var(--ease);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--glass-outer-glow), var(--glass-inner-glow), var(--shadow-sm);
 }
 .card:hover {
   background: var(--bg-card-hover);
-  box-shadow: var(--shadow-md);
+  border-color: var(--border-glow);
+  box-shadow: var(--glass-outer-glow), var(--glass-inner-glow), var(--shadow-md);
   transform: translateY(-2px);
 }
 
@@ -218,41 +251,45 @@ input:focus, textarea:focus, select:focus {
   transition: all var(--duration) var(--ease);
   white-space: nowrap;
   user-select: none;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: var(--glass-blur-light);
+  -webkit-backdrop-filter: var(--glass-blur-light);
 }
 
 .btn-primary {
   background: var(--accent-gradient);
   color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 20px -4px var(--accent-glow);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  box-shadow: var(--glass-inner-glow), 0 8px 24px -4px var(--accent-glow);
 }
 .btn-primary:hover {
-  transform: scale(1.02);
-  box-shadow: 0 12px 24px -4px var(--accent-glow);
+  transform: scale(1.03);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: var(--glass-inner-glow), 0 12px 32px -4px var(--accent-glow);
 }
 .btn-primary:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .btn-secondary {
   background: var(--bg-glass);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   color: var(--text-primary);
+  box-shadow: var(--glass-inner-glow);
 }
 .btn-secondary:hover {
   background: var(--bg-hover);
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: var(--border-glow);
 }
 
 .btn-danger {
-  background: rgba(194, 138, 138, 0.15);
+  background: rgba(194, 138, 138, 0.12);
   color: var(--danger);
-  border: 1px solid rgba(194, 138, 138, 0.25);
+  border: 1.5px solid rgba(194, 138, 138, 0.25);
+  box-shadow: var(--glass-inner-glow);
 }
 .btn-danger:hover {
-  background: rgba(194, 138, 138, 0.3);
+  background: rgba(194, 138, 138, 0.25);
+  border-color: rgba(194, 138, 138, 0.4);
 }
 
 .btn-icon {
@@ -306,16 +343,16 @@ input:focus, textarea:focus, select:focus {
   align-items: center;
   padding: 0 20px;
   background: var(--bg-secondary);
-  backdrop-filter: blur(25px) saturate(200%);
-  -webkit-backdrop-filter: blur(25px) saturate(200%);
-  border: 1px solid var(--border);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border: 1.5px solid var(--border);
   border-radius: 30px;
   position: sticky;
   top: 12px;
   z-index: 150;
   height: 56px;
   margin: 12px 16px;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--glass-outer-glow), var(--glass-inner-glow), var(--shadow-md);
   transition: all 0.3s var(--ease);
 }
 
@@ -345,22 +382,41 @@ input:focus, textarea:focus, select:focus {
 .current-trip-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: var(--bg-glass);
   padding: 6px 14px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  font-weight: 600;
   font-size: 0.85rem;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   transition: all 0.2s var(--ease);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 .current-trip-label:hover {
   background: var(--bg-hover);
   transform: translateY(-1px);
+  border-color: var(--border-focus);
+}
+.trip-name-text {
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.breadcrumb-sep {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.tab-name-text {
+  font-weight: 500;
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .auth-role-badge {
@@ -431,15 +487,15 @@ input:focus, textarea:focus, select:focus {
   max-width: 500px;
   height: 68px;
   background: var(--bg-secondary);
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
-  border: 1px solid var(--border);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border: 1.5px solid var(--border);
   border-radius: 34px;
   display: flex;
   align-items: center;
   justify-content: space-around;
   z-index: 100;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--glass-outer-glow), var(--glass-inner-glow), var(--shadow-lg);
   padding: 0 12px;
 }
 
@@ -575,9 +631,9 @@ input:focus, textarea:focus, select:focus {
 
 .modal-content {
   background: var(--bg-secondary);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid var(--border);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--sp-lg);
   max-width: 480px;
@@ -585,7 +641,7 @@ input:focus, textarea:focus, select:focus {
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp var(--duration) var(--ease);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--glass-outer-glow), var(--glass-inner-glow), var(--shadow-lg);
 }
 
 .modal-content h2 {
@@ -666,20 +722,22 @@ input:focus, textarea:focus, select:focus {
   white-space: nowrap;
   color: var(--text-secondary);
   background: var(--bg-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
+  backdrop-filter: var(--glass-blur-light);
+  -webkit-backdrop-filter: var(--glass-blur-light);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--glass-inner-glow);
   transition: all var(--duration) var(--ease);
 }
 .tab:hover {
   color: var(--text-primary);
   background: var(--bg-hover);
+  border-color: var(--border-glow);
 }
 .tab.active {
-  background: var(--accent);
+  background: var(--accent-gradient);
   color: #fff;
-  border-color: transparent;
-  box-shadow: 0 8px 16px -4px var(--accent-glow);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: var(--glass-inner-glow), 0 8px 20px -4px var(--accent-glow);
 }
 
 /* ========== Chips (day selector) ========== */
@@ -707,22 +765,25 @@ input:focus, textarea:focus, select:focus {
   font-size: 0.8rem;
   font-weight: 500;
   background: var(--bg-glass);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border);
+  backdrop-filter: var(--glass-blur-light);
+  -webkit-backdrop-filter: var(--glass-blur-light);
+  border: 1.5px solid var(--border);
   color: var(--text-secondary);
+  box-shadow: var(--glass-inner-glow);
   transition: all var(--duration) var(--ease);
   cursor: pointer;
   white-space: nowrap;
 }
 .chip:hover {
-  border-color: var(--accent);
+  border-color: var(--border-glow);
   color: var(--text-primary);
+  background: var(--bg-hover);
 }
 .chip.active {
   background: var(--accent-gradient);
   color: #fff;
-  border-color: transparent;
-  box-shadow: 0 8px 16px -4px var(--accent-glow);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: var(--glass-inner-glow), 0 8px 20px -4px var(--accent-glow);
 }
 
 /* ========== Thumbnails ========== */
@@ -860,6 +921,103 @@ input:focus, textarea:focus, select:focus {
   border-radius: 3px;
 }
 
+/* ========== Responsive Table ========== */
+.responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+@media (max-width: 768px) {
+  .responsive-table thead {
+    display: none;
+  }
+  .responsive-table tbody.responsive-card-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--sp-md);
+    background: var(--bg-card);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    padding: var(--sp-sm) var(--sp-sm) 0;
+    position: relative;
+    isolation: isolate;
+  }
+  .responsive-table tfoot {
+    display: block;
+  }
+  .responsive-table tr {
+    display: block;
+    border-bottom: none !important;
+  }
+  .responsive-table tr.main-row {
+    padding-top: 28px; /* space for absolute checkbox and x */
+  }
+  .responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding: var(--sp-sm) 0 !important;
+    text-align: right !important;
+    min-height: 44px;
+    gap: var(--sp-md);
+  }
+  .responsive-table td:last-child {
+    border-bottom: none;
+  }
+  .responsive-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    text-align: left;
+    flex: 1;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    min-width: 80px;
+    padding-right: var(--sp-sm);
+  }
+  
+  .responsive-table td[data-label=""]::before,
+  .responsive-table td:not([data-label])::before {
+    display: none;
+  }
+  
+  /* Absolute position for checkbox and action buttons */
+  .responsive-table .td-checkbox,
+  .responsive-table .td-action {
+    position: absolute;
+    top: var(--sp-sm);
+    border-bottom: none !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    width: auto !important;
+  }
+  .responsive-table .td-checkbox {
+    left: var(--sp-sm);
+  }
+  .responsive-table .td-action {
+    right: 4px; /* Move slightly right to align comfortably */
+    justify-content: flex-end;
+  }
+  
+  /* Fix notes row display on mobile */
+  .responsive-table tr.notes-row {
+    background: transparent !important;
+    border-top: 1px solid var(--border) !important;
+    padding-top: var(--sp-sm);
+    padding-bottom: var(--sp-sm);
+  }
+  .responsive-table tr.notes-row td {
+    display: block;
+    border-bottom: none;
+    padding: 0 !important;
+    min-height: auto;
+    text-align: left !important;
+  }
+}
+
 /* ========== Responsive — Mobile First ========== */
 
 /* --- Small screens (≤ 600px) --- */
@@ -936,6 +1094,36 @@ input:focus, textarea:focus, select:focus {
   margin-bottom: var(--sp-xs);
 }
 
+/* ========== Markdown Content ========== */
+.markdown-content p {
+  margin-top: 0;
+  margin-bottom: 0.5em;
+}
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+.markdown-content ul, .markdown-content ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+.markdown-content a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.markdown-content a:hover {
+  text-decoration: underline;
+}
+
+/* ========== Day Notes ========== */
+.day-notes {
+  background: rgba(var(--accent-rgb, 176,141,122), 0.05);
+  border: 1px solid rgba(var(--accent-rgb, 176,141,122), 0.15);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-xs) var(--sp-sm);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
 /* ========== Map Container ========== */
 .map-container {
   width: 100%;
@@ -945,6 +1133,7 @@ input:focus, textarea:focus, select:focus {
   border: 1px solid var(--border);
   margin-bottom: var(--sp-md);
   position: relative;
+  isolation: isolate;
 }
 .map-container.offline {
   display: flex;
@@ -977,4 +1166,265 @@ input:focus, textarea:focus, select:focus {
   font-size: 1.5rem;
   font-weight: 700;
   word-break: break-all;
+}
+
+/* ========== View Toggle ========== */
+.view-toggle {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--sp-md);
+  width: fit-content;
+}
+
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.25s var(--ease);
+}
+
+.view-toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.view-toggle-btn.active {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 4px 12px -2px var(--accent-glow);
+}
+
+/* ========== Notion Timeline ========== */
+.notion-timeline-wrapper {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.notion-timeline-today-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.notion-timeline-today-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+}
+
+.notion-timeline-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+}
+
+.notion-timeline-chart {
+  position: relative;
+  min-width: 100%;
+}
+
+.notion-timeline-months {
+  display: flex;
+  height: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.notion-timeline-month {
+  position: absolute;
+  top: 0;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  border-right: 1px solid var(--border);
+  background: var(--bg-glass);
+}
+
+.notion-timeline-days {
+  position: relative;
+  height: 32px;
+  border-bottom: 1px solid var(--border);
+}
+
+.notion-timeline-day {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  height: 32px;
+  box-sizing: border-box;
+}
+
+.notion-timeline-day.weekend {
+  font-weight: 700;
+  color: #e55;
+}
+
+.notion-timeline-day.today {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.notion-timeline-grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.notion-timeline-grid-col.weekend {
+  position: absolute;
+  background: rgba(var(--accent-rgb), 0.06);
+}
+
+.notion-timeline-row-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+  opacity: 0.5;
+}
+
+.notion-timeline-today-line {
+  position: absolute;
+  width: 2px;
+  background: var(--accent);
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.notion-timeline-bars {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.notion-timeline-bar {
+  position: absolute;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  transition: all 0.2s var(--ease);
+  opacity: 0.88;
+  z-index: 2;
+}
+
+.notion-timeline-bar:hover {
+  opacity: 1;
+  transform: scaleY(1.2);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  z-index: 6;
+}
+
+.notion-timeline-bar.active {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--accent);
+}
+
+.notion-timeline-bar-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 767px) {
+  .notion-timeline-today-btn {
+    top: 4px;
+    right: 4px;
+    padding: 3px 8px;
+    font-size: 0.68rem;
+  }
+}
+
+/* ========== Scroll To Top ========== */
+.scroll-to-top {
+  position: fixed;
+  right: var(--sp-md);
+  bottom: calc(var(--nav-height) + var(--sp-md) + 8px);
+  z-index: 999;
+  width: 42px;
+  height: 42px;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  animation: fadeIn 0.4s var(--ease) forwards;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  transition: all 0.25s var(--ease);
+}
+
+.scroll-to-top:hover {
+  background: var(--bg-hover);
+  color: var(--accent-light);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent-light);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (min-width: 768px) {
+  .scroll-to-top {
+    bottom: var(--sp-lg);
+    right: var(--sp-lg);
+  }
 }

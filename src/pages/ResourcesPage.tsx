@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { firestore } from '../firebase';
-import type { Resource, Day, Place, Note } from '../types';
+import type { Resource, TripNote } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { normalizeEmail } from '../utils/emails';
 import { useFirestoreQuery } from '../hooks/useFirestoreQuery';
+import InlineEdit from '../components/shared/InlineEdit';
+import PageLoader from '../components/shared/PageLoader';
 
 interface ResourcesPageProps {
   tripId: string;
@@ -21,8 +23,6 @@ export default function ResourcesPage({ tripId, readOnly = false }: ResourcesPag
   const perms = myCollab?.permissions || {};
   const hasAccess = isAdmin || (myCollab && perms['resources'] !== 'none');
 
-  const [activeTab, setActiveTab] = useState<'manual' | 'auto'>('manual');
-
   // 🚫 如果沒有權限，直接整頁隱藏
   if (!hasAccess) {
     return (
@@ -36,22 +36,73 @@ export default function ResourcesPage({ tripId, readOnly = false }: ResourcesPag
   return (
     <div>
       <div className="page-header">
-        <h1>連結 🔗</h1>
+        <h1>備忘 & 連結 🔗</h1>
       </div>
 
-      <div className="tabs">
-        <button className={`tab ${activeTab === 'manual' ? 'active' : ''}`} onClick={() => setActiveTab('manual')}>
-          📌 我的連結
-        </button>
-        <button className={`tab ${activeTab === 'auto' ? 'active' : ''}`} onClick={() => setActiveTab('auto')}>
-          🔄 自動收集
-        </button>
-      </div>
+      <TripNotes tripId={tripId} readOnly={readOnly} />
 
-      {activeTab === 'manual' ? (
-        <ManualLinks tripId={tripId} readOnly={readOnly} />
-      ) : (
-        <AutoLinks tripId={tripId} />
+      <hr style={{ margin: 'var(--sp-xl) 0', border: 'none', borderTop: '2px dashed var(--border)' }} />
+
+      <ManualLinks tripId={tripId} readOnly={readOnly} />
+    </div>
+  );
+}
+
+/* ========== Trip Notes Section ========== */
+function TripNotes({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
+  const notes = useFirestoreQuery<TripNote>(tripId, 'tripNotes', 'sortOrder');
+
+  const addNote = async () => {
+    if (readOnly || !tripId) return;
+    await addDoc(collection(firestore, 'trips', String(tripId), 'tripNotes'), {
+      tripId: String(tripId),
+      content: '',
+      sortOrder: notes?.length ?? 0,
+    });
+  };
+
+  const update = async (id: string, content: string) => {
+    if (readOnly || !id) return;
+    await updateDoc(doc(firestore, 'trips', String(tripId), 'tripNotes', String(id)), { content });
+  };
+
+  const remove = async (id: string) => {
+    if (readOnly || !id) return;
+    await deleteDoc(doc(firestore, 'trips', String(tripId), 'tripNotes', String(id)));
+  };
+
+  return (
+    <div style={{ marginBottom: 'var(--sp-xl)' }}>
+      <div className="section-title" style={{ fontSize: '1.1rem', marginBottom: 'var(--sp-md)' }}>📝 旅程備忘錄</div>
+      <div style={{ display: 'grid', gap: 'var(--sp-sm)' }}>
+        {notes?.map(n => (
+          <div key={n.id} className="card" style={{ display: 'flex', gap: 'var(--sp-sm)', alignItems: 'flex-start', padding: 'var(--sp-md)' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <InlineEdit
+                value={n.content}
+                onSave={v => update(n.id!, v)}
+                placeholder="點擊新增備忘錄 (支援 Markdown)..."
+                multiline
+                markdown
+                readOnly={readOnly}
+              />
+            </div>
+            {!readOnly && (
+              <button
+                className="btn-icon btn-danger"
+                style={{ fontSize: '0.7rem', flexShrink: 0, marginTop: '2px' }}
+                onClick={() => window.confirm('確定刪除這個備忘錄嗎？') && remove(n.id!)}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      {!readOnly && (
+        <button className="btn btn-secondary" onClick={addNote} style={{ marginTop: 'var(--sp-sm)', fontSize: '0.8rem' }}>
+          ＋ 新增備忘錄
+        </button>
       )}
     </div>
   );
@@ -64,6 +115,8 @@ function ManualLinks({ tripId, readOnly = false }: { tripId: string; readOnly?: 
   const [newTitle, setNewTitle] = useState('');
   const [newUrl, setNewUrl] = useState('');
   const [newCategory, setNewCategory] = useState('');
+
+  if (resources === undefined) return <PageLoader />;
 
   const addResource = async () => {
     if (!tripId) return;
@@ -219,81 +272,6 @@ function ResourceCard({
             </div>
           )}
         </div>
-      )}
-    </div>
-  );
-}
-
-/* ========== Auto Links Section ========== */
-function AutoLinks({ tripId }: { tripId: string }) {
-  const days = useFirestoreQuery<Day>(tripId, 'days', 'sortOrder');
-  const places = useFirestoreQuery<Place>(tripId, 'places', 'sortOrder');
-  const notes = useFirestoreQuery<Note>(tripId, 'notes', 'sortOrder');
-
-  type LinkItem = { dayNumber: number; placeName: string; url: string; label?: string };
-  const allLinks: LinkItem[] = [];
-
-  if (days && places && notes) {
-    for (const day of days) {
-      const dayPlaces = places.filter(p => p.dayId === day.id);
-      for (const place of dayPlaces) {
-        const placeNotes = notes.filter(n => n.placeId === place.id);
-        for (const note of placeNotes) {
-          if (note.url || note.content) {
-            allLinks.push({
-              dayNumber: day.dayNumber,
-              placeName: place.name || '未命名',
-              url: note.url || note.content,
-            });
-          }
-        }
-      }
-    }
-  }
-
-  const grouped: Record<number, LinkItem[]> = {};
-  allLinks.forEach(link => {
-    if (!grouped[link.dayNumber]) grouped[link.dayNumber] = [];
-    grouped[link.dayNumber].push(link);
-  });
-
-  return (
-    <div>
-      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 'var(--sp-md)' }}>
-        自動從每日行程的地點連結和網址備註中收集。
-      </p>
-
-      {allLinks.length === 0 ? (
-        <div className="empty-state">
-          <p style={{ fontSize: '2.5rem' }}>🔄</p>
-          <p>尚無自動收集的連結。請在每日行程中新增網址。</p>
-        </div>
-      ) : (
-        Object.entries(grouped)
-          .sort(([a], [b]) => Number(a) - Number(b))
-          .map(([dayNum, links]) => (
-            <div key={dayNum} style={{ marginBottom: 'var(--sp-lg)' }}>
-              <div className="section-title">第 {dayNum} 天</div>
-              {links.map((link, i) => (
-                <div key={i} className="card" style={{ marginBottom: 'var(--sp-xs)', padding: 'var(--sp-sm) var(--sp-md)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--sp-sm)', flexWrap: 'wrap' }}>
-                    <div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{link.placeName}</span>
-                      {link.label && <span className="badge" style={{ marginLeft: 'var(--sp-sm)', fontSize: '0.65rem' }}>{link.label}</span>}
-                    </div>
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: '0.78rem', wordBreak: 'break-all' }}
-                    >
-                      {link.url}
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))
       )}
     </div>
   );

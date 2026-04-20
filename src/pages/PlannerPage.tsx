@@ -12,6 +12,8 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from '@dnd-kit/utilities';
 import { useAuth } from '../context/AuthContext';
 import { useFirestoreQuery } from '../hooks/useFirestoreQuery';
+import PageLoader from '../components/shared/PageLoader';
+import { useOsrmRouting } from '../hooks/useOsrmRouting';
 
 const NUM_EMOJIS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 function numEmoji(i: number) { return NUM_EMOJIS[i] ?? `${i + 1}`; }
@@ -123,6 +125,10 @@ export default function PlannerPage({ tripId, readOnly = false }: PlannerPagePro
     syncDays();
   }, [tripId, tripMeta?.startDate, tripMeta?.endDate, days, isAdmin]);
 
+  if (days === undefined || allPlaces === undefined) {
+    return <PageLoader />;
+  }
+
   const activeTab = selectedTab ?? (days && days.length > 0 ? days[0].id! : null);
 
   return (
@@ -217,32 +223,41 @@ function PoolSection({ tripId, days, allPlaces, readOnly = false }: { tripId: st
   }, []);
 
   const allMapPoints = places.filter(p => p.lat && p.lng).map((p, i) => ({
+    id: p.id,
     name: p.name || p.address || `座標地點 (${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)})`,
     lat: p.lat!,
     lng: p.lng!,
     label: p.icon || numEmoji(i)
   }));
 
+  const handleMarkerClick = (id: string) => {
+    document.getElementById(`place-card-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   return (
     <div>
       <div className="map-container" style={allMapPoints.length === 0 ? { display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', color: 'var(--text-muted)' } : undefined}>
-        {allMapPoints.length > 0 && isOnline ? <RouteMap places={allMapPoints} /> : <span>{!isOnline ? '📡 離線中 — 無法顯示地圖' : '🗺️ 新增有地標的景點以顯示地圖'}</span>}
+        {allMapPoints.length > 0 && isOnline ? <RouteMap places={allMapPoints} onMarkerClick={handleMarkerClick} /> : <span>{!isOnline ? '📡 離線中 — 無法顯示地圖' : '🗺️ 新增有地標的景點以顯示地圖'}</span>}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-md)' }}>
         <span className="section-title" style={{ margin: 0 }}>📋 待排景點</span>
-        {!readOnly && <button className="btn btn-primary" onClick={addPlace} style={{ fontSize: '0.8rem' }}>＋ 新增景點</button>}
       </div>
 
       {places.length > 0 ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={places.map(p => p.id!)} strategy={verticalListSortingStrategy}>
             {places.map((place, index) => (
-              <div key={place.id}><SortablePlaceCard place={place} index={index} days={days} tripId={tripId} readOnly={readOnly} /></div>
+              <div key={place.id} id={`place-card-${place.id}`}><SortablePlaceCard place={place} index={index} days={days} tripId={tripId} readOnly={readOnly} /></div>
             ))}
           </SortableContext>
         </DndContext>
       ) : (
         <div className="empty-state"><p>想去但還沒排進行程的景點可以先放這裡！</p></div>
+      )}
+      {!readOnly && (
+        <div style={{ marginTop: 'var(--sp-sm)' }}>
+          <button className="btn btn-primary" onClick={addPlace} style={{ fontSize: '0.8rem', width: '100%', padding: 'var(--sp-sm)' }}>＋ 新增景點</button>
+        </div>
       )}
     </div>
   );
@@ -333,47 +348,58 @@ function DayDetail({ dayId, tripId, days, allPlaces, readOnly = false }: { dayId
   }, [allPlaces, places, backupPlaces, tripId, readOnly]);
 
   const allMapPoints = [
-    ...(startPoint ? [startPoint] : []),
+    ...(startPoint ? [{ ...startPoint, id: 'start-point' }] : []),
     ...placesInDay.filter(p => p.lat && p.lng).map((p, i) => ({
+      id: p.id,
       name: p.name || p.address || `座標地點 (${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)})`,
       lat: p.lat!,
       lng: p.lng!,
       label: p.icon || numEmoji(i)
     })),
-    ...(endPoint ? [endPoint] : [])
+    ...(endPoint ? [{ ...endPoint, id: 'end-point' }] : [])
   ];
+
+  const handleMarkerClick = (id: string) => {
+    document.getElementById(`place-card-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   return (
     <div>
       <div className="map-container" style={allMapPoints.length === 0 ? { display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-card)', color: 'var(--text-muted)' } : undefined}>
-        {allMapPoints.length > 0 && isOnline ? <RouteMap places={allMapPoints} /> : <span>{!isOnline ? '📡 離線中 — 無法顯示地圖' : '🗺️ 景點座標完整後將自動顯示地圖'}</span>}
+        {allMapPoints.length > 0 && isOnline ? <RouteMap places={allMapPoints} onMarkerClick={handleMarkerClick} /> : <span>{!isOnline ? '📡 離線中 — 無法顯示地圖' : '🗺️ 景點座標完整後將自動顯示地圖'}</span>}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-md)', flexWrap: 'wrap', gap: 'var(--sp-sm)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)', flexWrap: 'wrap' }}>
           <span className="section-title" style={{ margin: 0 }}>Day {day?.dayNumber} · {day?.date}</span>
         </div>
-        {!readOnly && (
-          <div style={{ display: 'flex', gap: 'var(--sp-xs)', flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" onClick={() => addPlace()} style={{ fontSize: '0.8rem' }}>＋ 新增景點</button>
-          </div>
-        )}
+      </div>
+
+      <div className="day-notes" style={{ marginBottom: 'var(--sp-lg)' }}>
+        <InlineEdit
+          value={day?.notes || ''}
+          onSave={(v) => updateDoc(doc(firestore, 'trips', String(tripId), 'days', String(dayId)), { notes: v })}
+          placeholder="📝 每日備註 (點擊展開/編輯，支援 Markdown)..."
+          multiline
+          markdown
+          readOnly={readOnly}
+        />
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <DroppableZone id="droppable-itinerary" isOver={activeDragPlace?.isBackup}>
           <div style={{ display: 'grid', gap: 0 }}>
             {startPoint && (
-              <>
+              <div id="place-card-start-point">
                 <VirtualPointCard point={startPoint} />
                 {places.length > 0 && <TravelSegment from={startPoint} to={places[0]} tripId={tripId} />}
-              </>
+              </div>
             )}
 
             {places && places.length > 0 ? (
               <SortableContext items={places.map(p => p.id!)} strategy={verticalListSortingStrategy}>
                 {places.map((place, index) => (
-                  <div key={place.id}>
+                  <div key={place.id} id={`place-card-${place.id}`}>
                     <SortablePlaceCard place={place} index={index} days={days} tripId={tripId} readOnly={readOnly} />
                     {index < places.length - 1 && <TravelSegment from={place} to={places[index + 1]} tripId={tripId} />}
                   </div>
@@ -384,11 +410,16 @@ function DayDetail({ dayId, tripId, days, allPlaces, readOnly = false }: { dayId
             )}
 
             {endPoint && (
-              <>
+              <div id="place-card-end-point">
                 {places.length > 0 && <TravelSegment from={places[places.length - 1]} to={endPoint} tripId={tripId} />}
                 {places.length === 0 && startPoint && <TravelSegment from={startPoint} to={endPoint} tripId={tripId} />}
                 <VirtualPointCard point={endPoint} />
-              </>
+              </div>
+            )}
+            {!readOnly && (
+              <div style={{ marginTop: 'var(--sp-sm)' }}>
+                <button className="btn btn-primary" onClick={() => addPlace()} style={{ fontSize: '0.8rem', width: '100%', padding: 'var(--sp-sm)' }}>＋ 新增景點</button>
+              </div>
             )}
           </div>
         </DroppableZone>
@@ -396,17 +427,21 @@ function DayDetail({ dayId, tripId, days, allPlaces, readOnly = false }: { dayId
         <div style={{ marginTop: 'var(--sp-lg)', borderTop: '2px dashed var(--border)', paddingTop: 'var(--sp-md)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-md)' }}>
             <span className="section-title" style={{ margin: 0, fontSize: '0.9rem' }}>🔸 每日備案</span>
-            {!readOnly && <button className="btn btn-secondary" onClick={() => addPlace(true)} style={{ fontSize: '0.75rem' }}>＋ 新增備案</button>}
           </div>
           <DroppableZone id="droppable-backup" isOver={activeDragPlace != null && !activeDragPlace.isBackup}>
             {backupPlaces && backupPlaces.length > 0 ? (
               <SortableContext items={backupPlaces.map(p => p.id!)} strategy={verticalListSortingStrategy}>
                 {backupPlaces.map((place, index) => (
-                  <div key={place.id}><SortablePlaceCard place={place} index={index} days={days} tripId={tripId} onPromote={() => promoteBackup(place.id!)} isBackup readOnly={readOnly} /></div>
+                  <div key={place.id} id={`place-card-${place.id}`}><SortablePlaceCard place={place} index={index} days={days} tripId={tripId} onPromote={() => promoteBackup(place.id!)} isBackup readOnly={readOnly} /></div>
                 ))}
               </SortableContext>
             ) : (
               <div className="empty-state" style={{ padding: 'var(--sp-md)' }}><p style={{ fontSize: '0.85rem' }}>備案景點會顯示在地圖上，方便臨時調整行程。</p></div>
+            )}
+            {!readOnly && (
+              <div style={{ marginTop: 'var(--sp-sm)' }}>
+                <button className="btn btn-secondary" onClick={() => addPlace(true)} style={{ fontSize: '0.8rem', width: '100%', padding: 'var(--sp-sm)' }}>＋ 新增備案</button>
+              </div>
             )}
           </DroppableZone>
         </div>
@@ -539,12 +574,23 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
             )}
           </div>
           {notes?.map(note => (
-            <div key={note.id} style={{ display: 'flex', gap: 'var(--sp-xs)', alignItems: 'flex-start', marginTop: 'var(--sp-xs)', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>{note.type === 'url' ? '🔗' : '📝'}</span>
-              {note.type === 'url' && note.url ? (
-                <a href={note.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>{note.content || note.url}</a>
-              ) : (
-                <InlineEdit value={note.content || note.url || ''} onSave={(v) => updateDoc(doc(firestore, 'trips', String(tripId), 'notes', String(note.id!)), { content: v })} placeholder="備註..." multiline readOnly={readOnly} />
+            <div key={note.id} style={{ display: 'flex', gap: 'var(--sp-xs)', alignItems: 'flex-start', marginTop: 'var(--sp-md)', fontSize: '0.85rem' }}>
+              <span style={{ color: 'var(--text-muted)', marginTop: '2px' }}>{note.type === 'url' ? '🔗' : '📝'}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {note.type === 'url' && note.url ? (
+                  <a href={note.url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', color: 'var(--text-primary)', textDecoration: 'underline', textDecorationColor: 'var(--accent)', textUnderlineOffset: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>{note.content || note.url}</a>
+                ) : (
+                  <InlineEdit value={note.content || note.url || ''} onSave={(v) => updateDoc(doc(firestore, 'trips', String(tripId), 'notes', String(note.id!)), { content: v })} placeholder="備註 (支援 Markdown)..." multiline markdown readOnly={readOnly} />
+                )}
+              </div>
+              {!readOnly && (
+                <button
+                  onClick={() => window.confirm('確定移除此項目嗎？') && deleteDoc(doc(firestore, 'trips', String(tripId), 'notes', String(note.id!)))}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--danger)', opacity: 0.9, padding: '0 4px', marginTop: '2px', alignSelf: 'flex-start', fontWeight: 'bold' }}
+                  title="移除"
+                >
+                  ✕
+                </button>
               )}
             </div>
           ))}
@@ -561,7 +607,6 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
           <div style={{ display: 'flex', gap: 'var(--sp-xs)', marginTop: 'var(--sp-sm)', flexWrap: 'wrap' }}>
             {!readOnly && isBackup && onPromote && <button className="btn btn-primary" onClick={onPromote} style={{ fontSize: '0.75rem' }}>➕ 加入行程</button>}
             {!readOnly && <button className="btn btn-secondary" onClick={() => addNote('text')} style={{ fontSize: '0.75rem' }}>📝 備註</button>}
-            {!readOnly && <button className="btn btn-secondary" onClick={() => addNote('url')} style={{ fontSize: '0.75rem' }}>🔗 連結</button>}
           </div>
         </div>
         {!readOnly && <button className="btn-icon btn-danger" onClick={deletePlace} style={{ fontSize: '0.7rem' }}>🗑️</button>}
@@ -571,28 +616,35 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
 }
 
 function TravelSegment({ from, to, tripId }: { from: Place; to: Place; tripId: string }) {
-  const dist = (from.lat && from.lng && to.lat && to.lng) ? calculateDistance(from.lat, from.lng, to.lat, to.lng) : null;
-  if (!dist) return null;
   const mode = from.travelMode || 'TRANSIT';
+  
+  // If mode is TRANSIT, we don't query OSRM because there are no free transit routing APIs,
+  // and we don't want to show misleading driving estimates.
+  const isTransit = mode === 'TRANSIT';
+  const { data, loading } = useOsrmRouting(from.lat, from.lng, to.lat, to.lng, isTransit ? undefined : mode as any);
+  
+  if (!from.lat || !from.lng || !to.lat || !to.lng) return null;
+  
   const labels: Record<string, string> = { WALKING: '🚶 步行', TRANSIT: '🚇 大眾運輸', DRIVING: '🚗 開車' };
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from.name || '')}&destination=${encodeURIComponent(to.name || '')}&travelmode=${mode.toLowerCase()}`;
+  
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)', padding: 'var(--sp-xs) 0', marginLeft: 'var(--sp-xl)', opacity: 0.8 }}>
-      <a href={directionsUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: '0.75rem' }}>
-        {labels[mode]} {dist.toFixed(1)} km
+      <a href={directionsUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-primary)', textDecoration: 'underline', textDecorationColor: 'var(--accent)', textUnderlineOffset: '2px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>
+        {labels[mode]} 
+        {!isTransit && (
+          loading ? (
+            <span style={{ opacity: 0.6 }}>計算中...</span>
+          ) : data ? (
+            <span>{data.distanceKm.toFixed(1)} km (約 {data.durationMin} 分鐘)</span>
+          ) : (
+            <span style={{ opacity: 0.6 }}>無法計算</span>
+          )
+        )}
       </a>
       <div style={{ flex: 1, height: 1, borderTop: '1px dashed var(--border)' }} />
     </div>
   );
-}
-
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
 }
 
 function useItineraryBounds(day: Day | undefined, days: Day[], hotels: Hotel[] | undefined, flights: Flight[] | undefined) {
@@ -608,14 +660,18 @@ function useItineraryBounds(day: Day | undefined, days: Day[], hotels: Hotel[] |
   if (isFirstDay && arrivalFlight && arrivalAirportCoords) {
     startPoint = { name: arrivalFlight.arrivalAirport || '機場', ...arrivalAirportCoords, label: '🛫', isVirtual: true, type: 'airport' };
   } else if (today) {
-    const hOut = hotels?.find(h => h.checkOut === today);
-    if (hOut && hOut.lat && hOut.lng) startPoint = { name: hOut.name, lat: hOut.lat, lng: hOut.lng, label: '🏨', isVirtual: true, type: 'hotel' };
+    const hStart = hotels?.find(h => h.checkIn && h.checkOut && h.checkIn < today && h.checkOut >= today);
+    if (hStart && hStart.lat && hStart.lng) {
+      startPoint = { name: hStart.name, lat: hStart.lat, lng: hStart.lng, label: '🏨', isVirtual: true, type: 'hotel' };
+    }
   }
   if (isLastDay && departureFlight && departureAirportCoords) {
     endPoint = { name: departureFlight.departureAirport || '機場', ...departureAirportCoords, label: '🛬', isVirtual: true, type: 'airport' };
   } else if (today) {
-    const hIn = hotels?.find(h => h.checkIn === today);
-    if (hIn && hIn.lat && hIn.lng) endPoint = { name: hIn.name, lat: hIn.lat, lng: hIn.lng, label: '🏨', isVirtual: true, type: 'hotel' };
+    const hEnd = hotels?.find(h => h.checkIn && h.checkOut && h.checkIn <= today && h.checkOut > today);
+    if (hEnd && hEnd.lat && hEnd.lng) {
+      endPoint = { name: hEnd.name, lat: hEnd.lat, lng: hEnd.lng, label: '🏨', isVirtual: true, type: 'hotel' };
+    }
   }
   return { startPoint, endPoint };
 }

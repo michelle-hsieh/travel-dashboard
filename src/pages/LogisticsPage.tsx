@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Fragment } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { firestore } from '../firebase';
 import InlineEdit from '../components/shared/InlineEdit';
@@ -9,6 +9,7 @@ import type { Flight, Hotel, Ticket, ChecklistItem, BudgetItem, Role, Permission
 import { useAuth } from '../context/AuthContext';
 import { normalizeEmail } from '../utils/emails';
 import { useFirestoreQuery } from '../hooks/useFirestoreQuery';
+import PageLoader from '../components/shared/PageLoader';
 
 interface LogisticsPageProps {
   tripId: string; // ✅ 改為 string
@@ -82,7 +83,7 @@ export default function LogisticsPage({ tripId, role, readOnly = false }: Logist
         {activeTab === 'flights' && <FlightsSection tripId={tripId} readOnly={readOnly} />}
         {activeTab === 'hotels' && <HotelsSection tripId={tripId} readOnly={readOnly} />}
         {activeTab === 'tickets' && <TicketsSection tripId={tripId} readOnly={readOnly} />}
-        {activeTab === 'checklist' && isAdmin && <ChecklistSection tripId={tripId} readOnly={readOnly} />}
+        {activeTab === 'checklist' && <ChecklistSection tripId={tripId} readOnly={readOnly} />}
         {activeTab === 'budget' && <BudgetSection tripId={tripId} isAdmin={isAdmin} readOnly={readOnly} />}
       </fieldset>
     </div>
@@ -92,6 +93,8 @@ export default function LogisticsPage({ tripId, role, readOnly = false }: Logist
 /* ===================== FLIGHTS ===================== */
 function FlightsSection({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
   const flights = useFirestoreQuery<Flight>(tripId, 'flights', 'sortOrder');
+
+  if (flights === undefined) return <PageLoader />;
 
   const addFlight = async () => {
     if (readOnly || !tripId) return;
@@ -158,6 +161,8 @@ function FlightsSection({ tripId, readOnly = false }: { tripId: string; readOnly
 /* ===================== HOTELS ===================== */
 function HotelsSection({ tripId, readOnly = false }: { tripId: string; readOnly?: boolean }) {
   const hotels = useFirestoreQuery<Hotel>(tripId, 'hotels', 'sortOrder');
+
+  if (hotels === undefined) return <PageLoader />;
 
   const addHotel = async () => {
     if (readOnly || !tripId) return;
@@ -243,6 +248,8 @@ function TicketsSection({ tripId, readOnly = false }: { tripId: string; readOnly
   const tickets = useFirestoreQuery<Ticket>(tripId, 'tickets', 'sortOrder');
   const places = useFirestoreQuery<Place>(tripId, 'places', 'sortOrder'); // ✅ 獲取景點列表
 
+  if (tickets === undefined || places === undefined) return <PageLoader />;
+
   const addTicket = async () => {
     if (readOnly || !tripId) return;
     await addDoc(collection(firestore, 'trips', String(tripId), 'tickets'), {
@@ -315,6 +322,13 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
   const places = useFirestoreQuery<Place>(tripId, 'places', 'sortOrder');
   const [newCategory, setNewCategory] = useState('行前準備');
   const [souvenirFilter, setSouvenirFilter] = useState<string>('all');
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  if (items === undefined || places === undefined) return <PageLoader />;
+
+  const toggleExpand = (id: string) => {
+    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const categories = [...new Set(items?.map(i => i.category) ?? [])];
   if (categories.length === 0) categories.push('行前準備', '伴手禮');
@@ -341,6 +355,17 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
     await deleteDoc(doc(firestore, 'trips', String(tripId), 'checklistItems', String(id)));
   };
 
+  const removeCategory = async (category: string) => {
+    if (readOnly || !tripId) return;
+    if (!window.confirm(`確定要移除「${category}」類別及其所有項目嗎？`)) return;
+    const catItems = items?.filter(i => i.category === category) ?? [];
+    for (const item of catItems) {
+      if (item.id) {
+        await deleteDoc(doc(firestore, 'trips', String(tripId), 'checklistItems', String(item.id)));
+      }
+    }
+  };
+
   return (
     <div>
       {categories.map(cat => {
@@ -353,14 +378,23 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
             ? catItems
             : catItems.filter(i => (i.recipient || '未設定') === souvenirFilter);
 
-          const totalAmount = filteredItems.reduce((sum, i) => sum + (i.amount || 0), 0);
+          const totalsByCurrency = filteredItems.reduce((acc, i) => {
+            const cur = i.currency || 'TWD';
+            acc[cur] = (acc[cur] || 0) + (i.amount || 0);
+            return acc;
+          }, {} as Record<string, number>);
           const checkedCount = filteredItems.filter(i => i.checked).length;
 
           return (
             <div key={cat} style={{ marginBottom: 'var(--sp-lg)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-md)', flexWrap: 'wrap', gap: 'var(--sp-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)' }}>
-                  <div className="section-title" style={{ margin: 0 }}>🎁 {cat}</div>
+                  <div className="section-title" style={{ margin: 0 }}>
+                    🎁 {cat}
+                    {!readOnly && (
+                      <button className="btn-icon btn-danger" style={{ fontSize: '0.8rem', marginLeft: '8px' }} onClick={() => removeCategory(cat)} title="移除此類別">🗑️</button>
+                    )}
+                  </div>
                   <select
                     value={souvenirFilter}
                     onChange={(e) => setSouvenirFilter(e.target.value)}
@@ -383,22 +417,22 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
                 <span className="badge">{checkedCount}/{filteredItems.length}</span>
               </div>
 
-              <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <div className="card" style={{ padding: 0, border: 'none', background: 'transparent', backdropFilter: 'none' }}>
+                <table className="responsive-table" style={{ fontSize: '0.85rem' }}>
                   <thead>
                     <tr style={{ background: 'rgba(var(--accent-rgb, 176,141,122), 0.05)', borderBottom: '1px solid var(--border)' }}>
                       <th style={{ width: 40, padding: '12px 8px' }}></th>
-                      <th style={{ textAlign: 'left', padding: '12px 8px' }}>項目</th>
-                      <th style={{ textAlign: 'left', padding: '12px 8px', width: '20%' }}>對象</th>
-                      <th style={{ textAlign: 'left', padding: '12px 8px', width: '25%' }}>地點</th>
-                      <th style={{ textAlign: 'right', padding: '12px 8px', width: '15%' }}>金額</th>
+                      <th style={{ textAlign: 'left', padding: '12px 8px', minWidth: '100px' }}>項目</th>
+                      <th style={{ textAlign: 'left', padding: '12px 8px', minWidth: '90px' }}>對象</th>
+                      <th style={{ textAlign: 'left', padding: '12px 8px', minWidth: '110px' }}>地點</th>
+                      <th style={{ textAlign: 'right', padding: '12px 8px', minWidth: '120px' }}>金額</th>
                       <th style={{ width: 40, padding: '12px 8px' }}></th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredItems.map(item => (
-                      <tr key={item.id} style={{ borderBottom: '1px solid var(--border)', opacity: item.checked ? 0.6 : 1 }}>
-                        <td style={{ textAlign: 'center', padding: '8px' }}>
+                  {filteredItems.map(item => (
+                    <tbody key={item.id} className="responsive-card-group">
+                      <tr key={item.id} className="main-row" style={{ borderBottom: expandedItems[item.id!] ? 'none' : '1px solid var(--border)', opacity: item.checked ? 0.6 : 1 }}>
+                        <td className="td-checkbox" data-label="" style={{ textAlign: 'center', padding: '8px' }}>
                           <input
                             type="checkbox"
                             checked={item.checked}
@@ -406,26 +440,31 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
                             style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
                           />
                         </td>
-                        <td style={{ padding: '8px' }}>
-                          <InlineEdit
-                            value={item.text}
-                            onSave={v => update(item.id!, { text: v })}
-                            placeholder="商品名稱..."
-                            style={{ textDecoration: item.checked ? 'line-through' : 'none', fontWeight: 500 }}
-                          />
+                        <td data-label="項目" style={{ padding: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <InlineEdit
+                              value={item.text}
+                              onSave={v => update(item.id!, { text: v })}
+                              placeholder="商品名稱..."
+                              style={{ textDecoration: item.checked ? 'line-through' : 'none', fontWeight: 500 }}
+                            />
+                            <button className="btn-icon" style={{ fontSize: '0.8rem', opacity: 0.6 }} onClick={() => toggleExpand(item.id!)}>
+                              {expandedItems[item.id!] ? '▾' : '📝'}
+                            </button>
+                          </div>
                         </td>
-                        <td style={{ padding: '8px' }}>
+                        <td data-label="對象" style={{ padding: '8px' }}>
                           <InlineEdit
                             value={item.recipient || ''}
                             onSave={v => update(item.id!, { recipient: v })}
                             placeholder="誰要的?"
                           />
                         </td>
-                        <td style={{ padding: '8px' }}>
+                        <td data-label="地點" style={{ padding: '8px' }}>
                           <select
                             value={item.location || ''}
                             onChange={(e) => update(item.id!, { location: e.target.value })}
-                            style={{ width: '100%', fontSize: '0.8rem', background: 'transparent', border: 'none', cursor: 'pointer', outline: 'none' }}
+                            style={{ width: 'auto', maxWidth: '100%', fontSize: '0.8rem', background: 'transparent', border: 'none', cursor: 'pointer', outline: 'none' }}
                           >
                             <option value="">選擇景點...</option>
                             {places?.filter(p => p.name).map(p => (
@@ -433,30 +472,60 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
                             ))}
                           </select>
                         </td>
-                        <td style={{ padding: '8px', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
-                            <span style={{ opacity: 0.5, fontSize: '0.7rem' }}>$</span>
+                        <td data-label="金額" style={{ padding: '8px', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                            <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>$</span>
                             <InlineEdit
                               value={item.amount != null ? `${item.amount}` : ''}
                               onSave={v => update(item.id!, { amount: v ? parseFloat(v) || 0 : undefined })}
                               placeholder="0"
-                              style={{ textAlign: 'right', width: '40px' }}
+                              style={{ textAlign: 'right', width: '70px', fontWeight: 600 }}
+                            />
+                            <InlineEdit
+                              value={item.currency || 'TWD'}
+                              onSave={v => update(item.id!, { currency: v })}
+                              placeholder="TWD"
+                              style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary)', minWidth: '40px', textAlign: 'center', background: 'rgba(255,255,255,0.15)', padding: '2px 6px', borderRadius: '4px' }}
                             />
                           </div>
                         </td>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <td className="td-action" data-label="" style={{ padding: '8px', textAlign: 'center' }}>
                           <button className="btn-icon btn-danger" style={{ fontSize: '0.65rem' }} onClick={() => remove(item.id!)}>✕</button>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
+                      {expandedItems[item.id!] && (
+                        <tr className="notes-row" style={{ background: 'rgba(0,0,0,0.01)' }}>
+                          <td data-label="" style={{ display: 'none' }}></td>
+                          <td colSpan={5} style={{ padding: '8px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <InlineEdit
+                                value={item.notes || ''}
+                                onSave={v => update(item.id!, { notes: v })}
+                                readOnly={readOnly}
+                                multiline
+                                markdown
+                                placeholder="新增備註 (支援 Markdown 語法)..."
+                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-card)', minHeight: '60px' }}
+                              />
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <FileUpload tripId={tripId} parentId={item.id!} parentType="checklistItem" />
+                                <div style={{ flex: 1 }}><AttachmentList tripId={tripId} parentId={item.id!} parentType="checklistItem" /></div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  ))}
                   <tfoot>
-                    <tr style={{ background: 'rgba(0,0,0,0.02)', fontWeight: 'bold' }}>
-                      <td colSpan={4} style={{ textAlign: 'right', padding: '12px 8px' }}>小計:</td>
-                      <td style={{ textAlign: 'right', padding: '12px 8px', color: 'var(--accent)' }}>
-                        ${totalAmount.toLocaleString()}
+                    <tr style={{ background: 'rgba(var(--accent-rgb, 176,141,122), 0.1)', fontWeight: 'bold' }}>
+                      <td data-label="總計" colSpan={6} style={{ textAlign: 'right', padding: '12px 8px', color: 'var(--accent)' }}>
+                        {Object.keys(totalsByCurrency).length === 0 ? '$0' : Object.entries(totalsByCurrency).map(([cur, val]) => (
+                          <div key={cur} style={{ display: 'inline-block', marginLeft: '12px' }}>
+                            {val.toLocaleString()} <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>{cur}</span>
+                          </div>
+                        ))}
                       </td>
-                      <td></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -469,8 +538,12 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
         const checked = catItems.filter(i => i.checked).length;
         return (
           <div key={cat} style={{ marginBottom: 'var(--sp-lg)' }}>
-            <div className="section-title">
-              {cat} <span className="badge">{checked}/{catItems.length}</span>
+            <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)' }}>
+              {cat}
+              <span className="badge">{checked}/{catItems.length}</span>
+              {!readOnly && (
+                <button className="btn-icon btn-danger" style={{ fontSize: '0.8rem', marginLeft: '4px' }} onClick={() => removeCategory(cat)} title="移除此類別">🗑️</button>
+              )}
             </div>
             {catItems.map(item => (
               <div key={item.id} className={`checklist-row ${item.checked ? 'checked' : ''}`} style={{
@@ -503,14 +576,34 @@ function ChecklistSection({ tripId, readOnly = false }: { tripId: string; readOn
                     />
                   </div>
                   <div style={{ display: 'flex', gap: 'var(--sp-xs)', alignItems: 'center' }}>
+                    <button className="btn-icon" style={{ fontSize: '0.8rem', opacity: 0.6 }} onClick={() => toggleExpand(item.id!)}>
+                      {expandedItems[item.id!] ? '▾' : '📝'}
+                    </button>
                     <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '6px', padding: '2px 6px' }}>
                       <span style={{ fontSize: '0.7rem', opacity: 0.5, marginRight: 4 }}>$</span>
                       <InlineEdit value={item.amount != null ? `${item.amount}` : ''} onSave={v => update(item.id!, { amount: v ? parseFloat(v) || 0 : undefined })} placeholder="0" style={{ fontSize: '0.8rem', width: 'auto' }} />
-                      <InlineEdit value={item.currency || 'TWD'} onSave={v => update(item.id!, { currency: v })} placeholder="TWD" style={{ fontSize: '0.65rem', marginLeft: 4, fontWeight: 'bold', color: 'var(--accent)' }} />
+                      <InlineEdit value={item.currency || 'TWD'} onSave={v => update(item.id!, { currency: v })} placeholder="TWD" style={{ fontSize: '0.75rem', marginLeft: 4, fontWeight: 800, color: 'var(--text-primary)', background: 'rgba(255,255,255,0.15)', padding: '0 4px', borderRadius: '4px' }} />
                     </div>
-                    <button className="btn-icon btn-danger" style={{ fontSize: '0.65rem', opacity: 0.5 }} onClick={() => remove(item.id!)}>✕</button>
+                    <button className="btn-icon btn-danger" style={{ fontSize: '0.7rem', opacity: 0.9, fontWeight: 'bold' }} onClick={() => remove(item.id!)}>✕</button>
                   </div>
                 </div>
+                {expandedItems[item.id!] && (
+                  <div style={{ padding: 'var(--sp-sm) 0 var(--sp-xs) 26px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <InlineEdit
+                      value={item.notes || ''}
+                      onSave={v => update(item.id!, { notes: v })}
+                      readOnly={readOnly}
+                      multiline
+                      markdown
+                      placeholder="新增備註 (支援 Markdown 語法)..."
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-card)', minHeight: '60px' }}
+                    />
+                    <div style={{ display: 'flex', gap: 'var(--sp-sm)', alignItems: 'center', marginTop: 'var(--sp-xs)' }}>
+                      <FileUpload tripId={tripId} parentId={item.id!} parentType="checklistItem" />
+                      <AttachmentList tripId={tripId} parentId={item.id!} parentType="checklistItem" />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             <button className="btn btn-secondary" onClick={() => addItem(cat)} style={{ marginTop: 'var(--sp-xs)', fontSize: '0.8rem' }}>＋ 新增項目</button>
@@ -537,6 +630,19 @@ function BudgetSection({ tripId, isAdmin, readOnly = false }: { tripId: string; 
   const places = useFirestoreQuery<Place>(tripId, 'places');
   const checklistItems = useFirestoreQuery<ChecklistItem>(tripId, 'checklistItems');
 
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number> | null>(null);
+
+  useEffect(() => {
+    if (navigator.onLine) {
+      fetch('https://open.er-api.com/v6/latest/TWD')
+        .then(res => res.json())
+        .then(data => { if (data && data.rates) setExchangeRates(data.rates); })
+        .catch(() => { });
+    }
+  }, []);
+
+  if (budgetItems === undefined || flights === undefined || hotels === undefined || tickets === undefined || places === undefined || checklistItems === undefined) return <PageLoader />;
+
   const addItem = async () => {
     if (readOnly || !tripId) return;
     await addDoc(collection(firestore, 'trips', String(tripId), 'budgetItems'), {
@@ -545,7 +651,7 @@ function BudgetSection({ tripId, isAdmin, readOnly = false }: { tripId: string; 
       description: '',
       amount: 0,
       currency: 'TWD',
-      sortOrder: budgetItems?.length ?? 0,
+      sortOrder: budgetItems.length,
     });
   };
 
@@ -559,16 +665,6 @@ function BudgetSection({ tripId, isAdmin, readOnly = false }: { tripId: string; 
   };
 
   const fallbackToTWD: Record<string, number> = { TWD: 1, JPY: 0.22, USD: 32.5, EUR: 35 };
-  const [exchangeRates, setExchangeRates] = useState<Record<string, number> | null>(null);
-
-  useEffect(() => {
-    if (navigator.onLine) {
-      fetch('https://open.er-api.com/v6/latest/TWD')
-        .then(res => res.json())
-        .then(data => { if (data && data.rates) setExchangeRates(data.rates); })
-        .catch(() => { });
-    }
-  }, []);
 
   const convertToTWD = (amount: number, currency: string) => {
     if (exchangeRates && exchangeRates[currency]) return Math.round(amount / exchangeRates[currency]);
@@ -606,17 +702,21 @@ function BudgetSection({ tripId, isAdmin, readOnly = false }: { tripId: string; 
 
       <div className="section-title">自訂預算項目</div>
       {budgetItems?.map(b => (
-        <div key={b.id} className="card" style={{ marginBottom: 'var(--sp-sm)' }}>
-          <div style={{ display: 'flex', gap: 'var(--sp-sm)', alignItems: 'center' }}>
-            <InlineEdit value={b.category} onSave={v => update(b.id!, { category: v })} placeholder="類別" />
-            <InlineEdit value={b.description} onSave={v => update(b.id!, { description: v })} placeholder="說明" />
-            <InlineEdit value={`${b.amount}`} onSave={v => update(b.id!, { amount: parseFloat(v) || 0 })} placeholder="0" />
-            <InlineEdit value={b.currency} onSave={v => update(b.id!, { currency: v })} placeholder="TWD" />
-            <button className="btn-icon btn-danger" style={{ fontSize: '0.7rem' }} onClick={() => remove(b.id!)}>✕</button>
+        <div key={b.id} className="card" style={{ marginBottom: 'var(--sp-sm)', padding: 'var(--sp-sm) var(--sp-md)' }}>
+          <div style={{ display: 'flex', gap: 'var(--sp-sm)', alignItems: 'center', flexWrap: 'wrap' }}>
+            <InlineEdit value={b.category} onSave={v => update(b.id!, { category: v })} placeholder="項目" readOnly={readOnly} />
+            <InlineEdit value={b.description} onSave={v => update(b.id!, { description: v })} placeholder="說明" readOnly={readOnly} style={{ flex: 1, minWidth: '100px' }} />
+            <InlineEdit value={`${b.amount}`} onSave={v => update(b.id!, { amount: parseFloat(v) || 0 })} placeholder="0" readOnly={readOnly} style={{ textAlign: 'right', fontWeight: 600 }} />
+            <InlineEdit value={b.currency} onSave={v => update(b.id!, { currency: v })} placeholder="TWD" readOnly={readOnly} style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary)', background: 'rgba(255,255,255,0.15)', padding: '2px 6px', borderRadius: '4px' }} />
+            {!readOnly && (
+              <button className="btn-icon btn-danger" style={{ fontSize: '0.7rem', marginLeft: 'auto', opacity: 0.9, fontWeight: 'bold' }} onClick={() => window.confirm('確定刪除此預算項目嗎？') && remove(b.id!)}>✕</button>
+            )}
           </div>
         </div>
       ))}
-      <button className="btn btn-primary" onClick={addItem}>＋ 新增預算項目</button>
+      {!readOnly && (
+        <button className="btn btn-primary" onClick={addItem}>＋ 新增預算項目</button>
+      )}
     </div>
   );
 }

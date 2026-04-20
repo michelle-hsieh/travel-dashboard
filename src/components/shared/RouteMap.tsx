@@ -35,7 +35,8 @@ function createLabelIcon(label: string) {
 }
 
 interface RouteMapProps {
-  places: { name: string; lat: number; lng: number; label?: string }[];
+  places: { id?: string; name: string; lat: number; lng: number; label?: string }[];
+  onMarkerClick?: (id: string) => void;
 }
 
 function FitBounds({ places }: { places: { lat: number; lng: number }[] }) {
@@ -64,7 +65,7 @@ function FitBounds({ places }: { places: { lat: number; lng: number }[] }) {
   return null;
 }
 
-export function RouteMap({ places }: RouteMapProps) {
+export function RouteMap({ places, onMarkerClick }: RouteMapProps) {
   if (places.length === 0) return null;
 
   const center: [number, number] = [places[0].lat, places[0].lng];
@@ -82,7 +83,18 @@ export function RouteMap({ places }: RouteMapProps) {
       />
       <FitBounds places={places} />
       {places.map((p, i) => (
-        <Marker key={`${p.lat}-${p.lng}-${i}`} position={[p.lat, p.lng]} icon={createLabelIcon(p.label || `${i + 1}`)}>
+        <Marker 
+          key={p.id ? `marker-${p.id}` : `${p.lat}-${p.lng}-${i}`} 
+          position={[p.lat, p.lng]} 
+          icon={createLabelIcon(p.label || `${i + 1}`)}
+          eventHandlers={{
+            click: () => {
+              if (onMarkerClick && p.id) {
+                onMarkerClick(p.id);
+              }
+            }
+          }}
+        >
           <Popup>{`#${i + 1} ${p.name}`}</Popup>
         </Marker>
       ))}
