@@ -124,7 +124,7 @@ html {
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  background-image: url('./background.png');
+  background-image: url('./assets/images/background.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -565,6 +565,7 @@ input:focus, textarea:focus, select:focus {
   justify-content: space-between;
   margin-bottom: var(--sp-lg);
   gap: var(--sp-md);
+  flex-wrap: wrap;
 }
 .page-header h1 {
   font-size: 1.8rem;
@@ -1030,8 +1031,32 @@ input:focus, textarea:focus, select:focus {
     padding-bottom: calc(var(--nav-height) + var(--sp-2xl));
   }
 
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-sm);
+  }
+
   .page-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+    margin-bottom: 0;
+  }
+
+  .auth-bar {
+    padding: 0 12px;
+    margin: 8px 8px;
+    height: 52px;
+  }
+
+  .current-trip-label {
+    padding: 4px 10px;
+    gap: 4px;
+    font-size: 0.75rem;
+    max-width: 180px;
+  }
+
+  .trip-name-text {
+    max-width: 80px;
   }
 
   .card {
