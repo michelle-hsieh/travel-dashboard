@@ -392,7 +392,7 @@ function DayDetail({ dayId, tripId, days, allPlaces, readOnly = false }: { dayId
             {startPoint && (
               <div id="place-card-start-point">
                 <VirtualPointCard point={startPoint} />
-                {places.length > 0 && <TravelSegment from={startPoint} to={places[0]} tripId={tripId} />}
+                {places.length > 0 && <TravelSegment from={startPoint} to={places[0]} tripId={tripId} readOnly={readOnly} onModeChange={async (m) => updateDoc(doc(firestore, 'trips', tripId, 'days', dayId), { startTravelMode: m })} />}
               </div>
             )}
 
@@ -401,7 +401,7 @@ function DayDetail({ dayId, tripId, days, allPlaces, readOnly = false }: { dayId
                 {places.map((place, index) => (
                   <div key={place.id} id={`place-card-${place.id}`}>
                     <SortablePlaceCard place={place} index={index} days={days} tripId={tripId} readOnly={readOnly} />
-                    {index < places.length - 1 && <TravelSegment from={place} to={places[index + 1]} tripId={tripId} />}
+                    {index < places.length - 1 && <TravelSegment from={place} to={places[index + 1]} tripId={tripId} readOnly={readOnly} />}
                   </div>
                 ))}
               </SortableContext>
@@ -411,8 +411,8 @@ function DayDetail({ dayId, tripId, days, allPlaces, readOnly = false }: { dayId
 
             {endPoint && (
               <div id="place-card-end-point">
-                {places.length > 0 && <TravelSegment from={places[places.length - 1]} to={endPoint} tripId={tripId} />}
-                {places.length === 0 && startPoint && <TravelSegment from={startPoint} to={endPoint} tripId={tripId} />}
+                {places.length > 0 && <TravelSegment from={places[places.length - 1]} to={endPoint} tripId={tripId} readOnly={readOnly} />}
+                {places.length === 0 && startPoint && <TravelSegment from={startPoint} to={endPoint} tripId={tripId} readOnly={readOnly} onModeChange={async (m) => updateDoc(doc(firestore, 'trips', tripId, 'days', dayId), { startTravelMode: m })} />}
                 <VirtualPointCard point={endPoint} />
               </div>
             )}
@@ -547,17 +547,6 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
           <div style={{ display: 'flex', gap: 'var(--sp-sm)', marginTop: 'var(--sp-xs)', fontSize: '0.8rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <InlineEdit value={place.amount != null ? `${place.amount}` : ''} onSave={(v) => updatePlace({ amount: parseFloat(v) || undefined })} placeholder="💰 金額" readOnly={readOnly} />
             <InlineEdit value={place.currency || ''} onSave={(v) => updatePlace({ currency: v })} placeholder="幣別 (TWD)" readOnly={readOnly} />
-            {readOnly ? (
-              <span style={{ fontSize: '0.75rem' }}>
-                {place.travelMode === 'WALKING' ? '🚶 步行' : place.travelMode === 'DRIVING' ? '🚗 開車' : '🚇 大眾運輸'}
-              </span>
-            ) : (
-              <select value={place.travelMode || 'TRANSIT'} onChange={(e) => updatePlace({ travelMode: e.target.value as any })} style={{ width: 'auto', fontSize: '0.75rem', padding: '2px 6px' }}>
-                <option value="WALKING">🚶 步行</option>
-                <option value="TRANSIT">🚇 大眾運輸</option>
-                <option value="DRIVING">🚗 開車</option>
-              </select>
-            )}
             {!readOnly && (
               <select value={`${place.dayId}:${place.isBackup ? '1' : '0'}`} onChange={async (e) => {
                 const [newDayId, backupStr] = e.target.value.split(':');
@@ -615,7 +604,7 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
   );
 }
 
-function TravelSegment({ from, to, tripId }: { from: Place; to: Place; tripId: string }) {
+function TravelSegment({ from, to, tripId, readOnly = false, onModeChange }: { from: any; to: any; tripId: string; readOnly?: boolean; onModeChange?: (mode: string) => Promise<void> }) {
   const mode = from.travelMode || 'TRANSIT';
   
   // If mode is TRANSIT, we don't query OSRM because there are no free transit routing APIs,
@@ -628,20 +617,43 @@ function TravelSegment({ from, to, tripId }: { from: Place; to: Place; tripId: s
   const labels: Record<string, string> = { WALKING: '🚶 步行', TRANSIT: '🚇 大眾運輸', DRIVING: '🚗 開車' };
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from.name || '')}&destination=${encodeURIComponent(to.name || '')}&travelmode=${mode.toLowerCase()}`;
   
+  const handleModeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (onModeChange) {
+      await onModeChange(value);
+    } else if (from.id && !from.isVirtual && !readOnly) {
+      await updateDoc(doc(firestore, 'trips', String(tripId), 'places', String(from.id)), { travelMode: value });
+    }
+  };
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-sm)', padding: 'var(--sp-xs) 0', marginLeft: 'var(--sp-xl)', opacity: 0.8 }}>
-      <a href={directionsUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-primary)', textDecoration: 'underline', textDecorationColor: 'var(--accent)', textUnderlineOffset: '2px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>
-        {labels[mode]} 
-        {!isTransit && (
-          loading ? (
-            <span style={{ opacity: 0.6 }}>計算中...</span>
-          ) : data ? (
-            <span>{data.distanceKm.toFixed(1)} km (約 {data.durationMin} 分鐘)</span>
-          ) : (
-            <span style={{ opacity: 0.6 }}>無法計算</span>
-          )
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {readOnly || (from.isVirtual && !onModeChange) ? (
+           <span style={{ fontSize: '0.75rem' }}>{labels[mode]}</span>
+        ) : (
+           <select 
+             value={mode} 
+             onChange={handleModeChange} 
+             style={{ width: 'auto', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border)', background: 'transparent' }}
+           >
+             <option value="WALKING">🚶 步行</option>
+             <option value="TRANSIT">🚇 大眾運輸</option>
+             <option value="DRIVING">🚗 開車</option>
+           </select>
         )}
-      </a>
+        <a href={directionsUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-primary)', textDecoration: 'underline', textDecorationColor: 'var(--accent)', textUnderlineOffset: '2px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>
+          {isTransit ? '🗺️ 在地圖中開啟' : (
+            loading ? (
+              <span style={{ opacity: 0.6 }}>計算中...</span>
+            ) : data ? (
+              <span>{data.distanceKm.toFixed(1)} km (約 {data.durationMin} 分鐘)</span>
+            ) : (
+              <span style={{ opacity: 0.6 }}>無法計算</span>
+            )
+          )}
+        </a>
+      </div>
       <div style={{ flex: 1, height: 1, borderTop: '1px dashed var(--border)' }} />
     </div>
   );
@@ -658,11 +670,11 @@ function useItineraryBounds(day: Day | undefined, days: Day[], hotels: Hotel[] |
   let startPoint: any = null;
   let endPoint: any = null;
   if (isFirstDay && arrivalFlight && arrivalAirportCoords) {
-    startPoint = { name: arrivalFlight.arrivalAirport || '機場', ...arrivalAirportCoords, label: '🛫', isVirtual: true, type: 'airport' };
+    startPoint = { name: arrivalFlight.arrivalAirport || '機場', ...arrivalAirportCoords, label: '🛫', isVirtual: true, type: 'airport', travelMode: day?.startTravelMode };
   } else if (today) {
     const hStart = hotels?.find(h => h.checkIn && h.checkOut && h.checkIn < today && h.checkOut >= today);
     if (hStart && hStart.lat && hStart.lng) {
-      startPoint = { name: hStart.name, lat: hStart.lat, lng: hStart.lng, label: '🏨', isVirtual: true, type: 'hotel' };
+      startPoint = { name: hStart.name, lat: hStart.lat, lng: hStart.lng, label: '🏨', isVirtual: true, type: 'hotel', travelMode: day?.startTravelMode };
     }
   }
   if (isLastDay && departureFlight && departureAirportCoords) {

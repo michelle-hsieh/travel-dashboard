@@ -23,6 +23,7 @@ export interface Day {
   dayNumber: number;
   sortOrder: number;
   notes?: string;
+  startTravelMode?: 'WALKING' | 'TRANSIT' | 'DRIVING';
 }
 
 export interface TripNote {
