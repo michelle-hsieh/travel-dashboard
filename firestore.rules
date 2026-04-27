@@ -71,8 +71,8 @@ service cloud.firestore {
 
       // --- SUBCOLLECTIONS ---
       match /checklistItems/{itemId} { 
-        allow read: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'read'); 
-        allow write: if isAdmin(tripId);
+        allow read: if isAdmin(tripId) || hasPermission(tripId, 'checklist', 'read'); 
+        allow write: if isAdmin(tripId) || hasPermission(tripId, 'checklist', 'write');
       }
       match /days/{dayId} {
         allow read: if isAdmin(tripId) || hasPermission(tripId, 'planner', 'read');
@@ -95,8 +95,8 @@ service cloud.firestore {
         allow write: if isAdmin(tripId) || hasPermission(tripId, 'tickets', 'write');
       }
       match /budgetItems/{itemId} {
-        allow read: if isAdmin(tripId) || isCollaborator(tripId);
-        allow write: if isAdmin(tripId);
+        allow read: if isAdmin(tripId) || hasPermission(tripId, 'budget', 'read');
+        allow write: if isAdmin(tripId) || hasPermission(tripId, 'budget', 'write');
       }
       match /resources/{resourceId} {
         allow read: if isAdmin(tripId) || hasPermission(tripId, 'resources', 'read');

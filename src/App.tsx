@@ -22,7 +22,12 @@ function AppInner() {
   const { role, user, canRead, canWrite, activeTripId, setActiveTripId, tripMeta } = useAuth();
 
   const plannerWritable = canWrite('planner');
-  const logisticsWritable = canWrite('flights') || canWrite('hotels') || canWrite('tickets');
+  const logisticsWritable =
+    canWrite('flights') ||
+    canWrite('hotels') ||
+    canWrite('tickets') ||
+    canWrite('checklist') ||
+    canWrite('budget');
   const resourcesWritable = canWrite('resources');
 
   useEffect(() => {
@@ -119,7 +124,14 @@ function AppInner() {
 
   if (activeTripId) {
     leftTabs.push({ key: 'planner', icon: '🗓️', label: '行程' });
-    if (role === 'admin' || canRead('flights') || canRead('hotels') || canRead('tickets')) {
+    if (
+      role === 'admin' ||
+      canRead('flights') ||
+      canRead('hotels') ||
+      canRead('tickets') ||
+      canRead('checklist') ||
+      canRead('budget')
+    ) {
       leftTabs.push({ key: 'logistics', icon: '📋', label: '準備' });
     }
     if (role === 'admin' || canRead('resources')) {

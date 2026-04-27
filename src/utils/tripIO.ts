@@ -77,7 +77,7 @@ export async function importTrip(
     daysCount: data.daysCount || 0,
     placesCount: data.placesCount || 0,
     publicPermissions: data.publicPermissions || {
-      planner: 'none', flights: 'none', hotels: 'none', tickets: 'none', resources: 'none'
+      planner: 'none', flights: 'none', hotels: 'none', tickets: 'none', checklist: 'none', budget: 'none', resources: 'none'
     }
   };
 

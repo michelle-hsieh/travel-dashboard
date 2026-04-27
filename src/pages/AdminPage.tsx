@@ -10,13 +10,15 @@ const TAB_LABELS: Record<PermissionTab, string> = {
   flights: '航班',
   hotels: '住宿',
   tickets: '票券',
+  checklist: '清單',
+  budget: '預算',
   resources: '連結',
 };
 
 const PERMISSION_OPTIONS: { value: PermissionLevel; label: string }[] = [
   { value: 'none', label: '無' },
   { value: 'read', label: '可讀' },
-  { value: 'write', label: '讀寫' },
+  { value: 'write', label: '可編輯' },
 ];
 
 const DEFAULT_PERMISSIONS: TabPermissions = {
@@ -24,6 +26,8 @@ const DEFAULT_PERMISSIONS: TabPermissions = {
   flights: 'none',
   hotels: 'none',
   tickets: 'none',
+  checklist: 'none',
+  budget: 'none',
   resources: 'none',
 };
 
@@ -35,6 +39,8 @@ export default function AdminPage({ tripId }: { tripId: string }) {
     flights: 'read',
     hotels: 'read',
     tickets: 'read',
+    checklist: 'read',
+    budget: 'read',
     resources: 'read',
   });
   const [saving, setSaving] = useState(false);
@@ -43,8 +49,8 @@ export default function AdminPage({ tripId }: { tripId: string }) {
   if (role !== 'admin') {
     return (
       <div className="empty-state">
-        <p style={{ fontSize: '3rem' }}>🚫</p>
-        <p>只有管理者可以調整權限</p>
+        <p style={{ fontSize: '3rem' }}>🔒</p>
+        <p>只有管理者可以設定權限。</p>
       </div>
     );
   }
@@ -57,13 +63,13 @@ export default function AdminPage({ tripId }: { tripId: string }) {
 
   const savePublicPermissions = async (permissions: TabPermissions) => {
     setSaving(true);
+    setMessage('');
     try {
-      const tripRef = doc(firestore, 'trips', tripId);
-      await updateDoc(tripRef, { publicPermissions: permissions });
-      setMessage('已更新全體預設權限');
+      await updateDoc(doc(firestore, 'trips', tripId), { publicPermissions: permissions });
+      setMessage('已更新預設權限。');
     } catch (err) {
       console.error('Failed to save public permissions:', err);
-      setMessage('儲存失敗');
+      setMessage('更新預設權限失敗。');
     } finally {
       setSaving(false);
     }
@@ -86,18 +92,20 @@ export default function AdminPage({ tripId }: { tripId: string }) {
         delete collabs[legacyKey];
       }
 
-      const collaboratorEmails = Object.values(collabs).map((c: any) => normalizeEmail((c as Collaborator).email));
+      const collaboratorEmails = Object.values(collabs).map((c: any) =>
+        normalizeEmail((c as Collaborator).email)
+      );
 
       await updateDoc(tripRef, {
         collaborators: collabs,
         memberEmails: collaboratorEmails,
-        collaboratorEmails: collaboratorEmails
+        collaboratorEmails,
       });
 
-      setMessage(`已更新 ${email} 的權限`);
+      setMessage(`已儲存 ${email} 的權限。`);
     } catch (err) {
       console.error('Failed to save collaborator:', err);
-      setMessage('儲存失敗');
+      setMessage('儲存協作者權限失敗。');
     } finally {
       setSaving(false);
     }
@@ -105,27 +113,30 @@ export default function AdminPage({ tripId }: { tripId: string }) {
 
   const removeCollaborator = async (key: string) => {
     setSaving(true);
+    setMessage('');
     try {
       const tripRef = doc(firestore, 'trips', tripId);
       const snap = await getDoc(tripRef);
-      if (snap.exists()) {
-        const data = snap.data();
-        const collabs = { ...(data.collaborators ?? {}) };
-        delete collabs[key];
+      if (!snap.exists()) return;
 
-        const collaboratorEmails = Object.values(collabs).map((c: any) => normalizeEmail((c as Collaborator).email));
+      const data = snap.data();
+      const collabs = { ...(data.collaborators ?? {}) };
+      delete collabs[key];
 
-        await updateDoc(tripRef, {
-          collaborators: collabs,
-          memberEmails: collaboratorEmails,
-          collaboratorEmails: collaboratorEmails
-        });
+      const collaboratorEmails = Object.values(collabs).map((c: any) =>
+        normalizeEmail((c as Collaborator).email)
+      );
 
-        setMessage('已移除協作者');
-      }
+      await updateDoc(tripRef, {
+        collaborators: collabs,
+        memberEmails: collaboratorEmails,
+        collaboratorEmails,
+      });
+
+      setMessage('已移除協作者。');
     } catch (err) {
       console.error('Failed to remove collaborator:', err);
-      setMessage('移除失敗');
+      setMessage('移除協作者失敗。');
     } finally {
       setSaving(false);
     }
@@ -134,53 +145,75 @@ export default function AdminPage({ tripId }: { tripId: string }) {
   const handleAddNew = () => {
     const email = newEmail.trim();
     if (!email || !email.includes('@')) {
-      setMessage('請輸入有效的 Email');
+      setMessage('請輸入有效的 Email。');
       return;
     }
-    saveCollaborator(email, newPerms);
+    void saveCollaborator(email, newPerms);
     setNewEmail('');
   };
+
+  const renderPermissionGrid = (
+    permissions: TabPermissions,
+    onChange: (tab: PermissionTab, value: PermissionLevel) => void
+  ) => (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+        gap: 'var(--sp-sm)',
+      }}
+    >
+      {(Object.keys(TAB_LABELS) as PermissionTab[]).map((tab) => (
+        <div
+          key={tab}
+          style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-xs)', fontSize: '0.85rem' }}
+        >
+          <label style={{ minWidth: 60 }}>{TAB_LABELS[tab]}</label>
+          <select
+            value={permissions[tab] || 'none'}
+            onChange={(e) => onChange(tab, e.target.value as PermissionLevel)}
+            style={{ fontSize: '0.8rem', padding: '2px 4px' }}
+          >
+            {PERMISSION_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div>
       <div className="page-header">
-        <h1>授權</h1>
+        <h1>權限管理</h1>
       </div>
 
       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 'var(--sp-md)' }}>
-        設定協作者的存取權限；只有管理者能編輯，協作者無法看到清單與預算的細節。
+        這裡可以設定所有分頁的可讀取與可編輯權限，現在包含清單與預算。
       </p>
 
-      {/* Default Permissions for All Users */}
-      <div className="card" style={{ marginBottom: 'var(--sp-lg)', border: '1px solid var(--accent)', background: 'rgba(var(--accent-rgb, 176,141,122), 0.03)' }}>
-        <div className="section-title" style={{ color: 'var(--accent)', margin: 0, marginBottom: 'var(--sp-xs)' }}>🌐 全體預設權限 (所有人)</div>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 'var(--sp-sm)' }}>
-          設定「未在下方清單中」的使用者權限。可用於開放「所有人可讀取」，訪客亦可點擊進入。
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 'var(--sp-sm)' }}>
-          {(Object.keys(TAB_LABELS) as PermissionTab[]).map((tab) => (
-            <div key={tab} style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-xs)', fontSize: '0.85rem' }}>
-              <label style={{ minWidth: 60 }}>{TAB_LABELS[tab]}</label>
-              <select
-                value={publicPermissions[tab] || 'none'}
-                onChange={(e) => {
-                  const updated = { ...publicPermissions, [tab]: e.target.value as PermissionLevel };
-                  savePublicPermissions(updated);
-                }}
-                style={{ fontSize: '0.8rem', padding: '2px 4px' }}
-              >
-                {PERMISSION_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
+      <div
+        className="card"
+        style={{
+          marginBottom: 'var(--sp-lg)',
+          border: '1px solid var(--accent)',
+          background: 'rgba(var(--accent-rgb, 176,141,122), 0.03)',
+        }}
+      >
+        <div className="section-title" style={{ color: 'var(--accent)', margin: 0, marginBottom: 'var(--sp-xs)' }}>
+          預設權限
         </div>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 'var(--sp-sm)' }}>
+          套用給未在下方協作者名單中的使用者。
+        </p>
+        {renderPermissionGrid(publicPermissions, (tab, value) => {
+          void savePublicPermissions({ ...publicPermissions, [tab]: value });
+        })}
       </div>
 
-      {/* Add new collaborator */}
       <div className="card" style={{ marginBottom: 'var(--sp-lg)' }}>
         <div className="section-title">新增協作者</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-sm)' }}>
@@ -191,26 +224,9 @@ export default function AdminPage({ tripId }: { tripId: string }) {
             type="email"
             onKeyDown={(e) => e.key === 'Enter' && handleAddNew()}
           />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 'var(--sp-sm)' }}>
-            {(Object.keys(TAB_LABELS) as PermissionTab[]).map((tab) => (
-              <div key={tab} style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-xs)', fontSize: '0.85rem' }}>
-                <label style={{ minWidth: 60 }}>{TAB_LABELS[tab]}</label>
-                <select
-                  value={newPerms[tab]}
-                  onChange={(e) =>
-                    setNewPerms((prev) => ({ ...prev, [tab]: e.target.value as PermissionLevel }))
-                  }
-                  style={{ fontSize: '0.8rem', padding: '2px 4px' }}
-                >
-                  {PERMISSION_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
+          {renderPermissionGrid(newPerms, (tab, value) => {
+            setNewPerms((prev) => ({ ...prev, [tab]: value }));
+          })}
           <button
             className="btn btn-primary"
             onClick={handleAddNew}
@@ -222,27 +238,39 @@ export default function AdminPage({ tripId }: { tripId: string }) {
         </div>
       </div>
 
-      {/* Current collaborators */}
-      <div className="section-title">現有協作者</div>
+      <div className="section-title">目前協作者</div>
       {collabList.length === 0 ? (
         <div className="empty-state">
-          <p>目前沒有協作者</p>
+          <p>目前沒有協作者。</p>
         </div>
       ) : (
         collabList.map((collab) => (
           <div key={collab.key} className="card" style={{ marginBottom: 'var(--sp-sm)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--sp-sm)', flexWrap: 'wrap' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: 'var(--sp-sm)',
+                flexWrap: 'wrap',
+              }}
+            >
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{collab.email}</div>
                 <div style={{ display: 'flex', gap: 'var(--sp-sm)', flexWrap: 'wrap', marginTop: 'var(--sp-xs)' }}>
                   {(Object.keys(TAB_LABELS) as PermissionTab[]).map((tab) => (
-                    <div key={tab} style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-xs)', fontSize: '0.8rem' }}>
+                    <div
+                      key={tab}
+                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-xs)', fontSize: '0.8rem' }}
+                    >
                       <span style={{ color: 'var(--text-muted)' }}>{TAB_LABELS[tab]}:</span>
                       <select
                         value={collab.permissions[tab] || 'none'}
                         onChange={(e) => {
-                          const updated = { ...collab.permissions, [tab]: e.target.value as PermissionLevel };
-                          saveCollaborator(collab.email, updated);
+                          void saveCollaborator(collab.email, {
+                            ...collab.permissions,
+                            [tab]: e.target.value as PermissionLevel,
+                          });
                         }}
                         style={{ fontSize: '0.75rem', padding: '1px 3px' }}
                       >
@@ -258,8 +286,8 @@ export default function AdminPage({ tripId }: { tripId: string }) {
               </div>
               <button
                 className="btn-icon btn-danger"
-                onClick={() => removeCollaborator(collab.key)}
-                title="刪除"
+                onClick={() => void removeCollaborator(collab.key)}
+                title="移除"
               >
                 ✕
               </button>
@@ -274,7 +302,9 @@ export default function AdminPage({ tripId }: { tripId: string }) {
             marginTop: 'var(--sp-md)',
             padding: 'var(--sp-sm) var(--sp-md)',
             borderRadius: 'var(--radius-sm)',
-            background: message.includes('失敗') ? 'rgba(194, 138, 138, 0.15)' : 'rgba(143, 168, 155, 0.15)',
+            background: message.includes('失敗')
+              ? 'rgba(194, 138, 138, 0.15)'
+              : 'rgba(143, 168, 155, 0.15)',
             color: message.includes('失敗') ? 'var(--danger)' : 'var(--success)',
             fontSize: '0.85rem',
           }}

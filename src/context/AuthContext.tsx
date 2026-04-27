@@ -10,6 +10,8 @@ const DEFAULT_PERMISSIONS: TabPermissions = {
   flights: 'none',
   hotels: 'none',
   tickets: 'none',
+  checklist: 'none',
+  budget: 'none',
   resources: 'none',
 };
 
@@ -18,6 +20,8 @@ const ADMIN_PERMISSIONS: TabPermissions = {
   flights: 'write',
   hotels: 'write',
   tickets: 'write',
+  checklist: 'write',
+  budget: 'write',
   resources: 'write',
 };
 

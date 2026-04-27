@@ -151,7 +151,7 @@ export type ParentType = 'place' | 'flight' | 'hotel' | 'ticket' | 'checklistIte
 
 export type Role = 'admin' | 'member' | 'guest';
 export type PermissionLevel = 'none' | 'read' | 'write';
-export type PermissionTab = 'planner' | 'flights' | 'hotels' | 'tickets' | 'resources';
+export type PermissionTab = 'planner' | 'flights' | 'hotels' | 'tickets' | 'checklist' | 'budget' | 'resources';
 export type TabPermissions = Record<PermissionTab, PermissionLevel>;
 
 export interface Collaborator {
