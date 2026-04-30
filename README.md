@@ -31,7 +31,7 @@ graph TB
         subgraph Data["資料存取層"]
             FSQuery["useFirestoreQuery\n即時資料訂閱"]
             FSSync["useFirestoreSync\n旅程列表同步"]
-            DexieDB["Dexie.js / IndexedDB\n本機離線快取"]
+            LocalCache["Firestore persistentLocalCache\n本機離線快取 (IndexedDB)"]
         end
 
         subgraph Services["服務層"]
@@ -63,7 +63,7 @@ graph TB
     AuthCtx --> FSSync
     Planner & Logistics & Resources & Admin --> FSQuery
     FSQuery & FSSync --> Firestore
-    Firestore <--> DexieDB
+    Firestore <--> LocalCache
     AuthCtx --> FBAuth
     Chat --> AISvc
     AISvc --> OpenAI & Gemini & Cerebras
@@ -84,7 +84,7 @@ sequenceDiagram
     participant Auth as AuthContext
     participant FBAuth as Firebase Auth
     participant FS as Firestore
-    participant Dexie as IndexedDB
+    participant Cache as IndexedDB (persistentLocalCache)
     participant Page as 各頁面
     participant Chat as ChatWidget
     participant AI as AI 供應商
@@ -102,10 +102,10 @@ sequenceDiagram
 
     User->>Page: 切換至 PlannerPage
     Page->>FS: useFirestoreQuery('days', 'places')
-    FS-->>Dexie: persistentLocalCache 同步
+    FS-->>Cache: persistentLocalCache 同步
     FS-->>Page: 即時資料推送
 
-    Note over Page,Dexie: 離線時直接從 IndexedDB 讀取
+    Note over Page,Cache: 離線時直接從 IndexedDB 讀取
 
     User->>Chat: 輸入自然語言 (e.g. "幫我加一班機票")
     Chat->>AI: sendMessage() + tool definitions
@@ -152,7 +152,7 @@ flowchart LR
 
 ### 1. 資料儲存與同步 (Data Layer)
 - **Firebase Firestore**: 作為主要雲端資料儲存平台，具有即時同步功能。資料結構主要圍繞在 `trips` 集合及其子集合 (`flights`, `hotels`, `checklistItems` 等)。
-- **Dexie.js (IndexedDB)**: 在本地端使用 IndexedDB 存取資料，以支援無網路狀態下的流暢操作。
+- **Firestore persistentLocalCache (IndexedDB)**: 透過 Firestore SDK 內建的本機快取機制，自動將資料寫入 IndexedDB，支援無網路狀態下的流暢操作與多分頁同步 (`persistentMultipleTabManager`)。
 - **離線狀態監控**: 在 `App.tsx` 中實作 `offline` 與 `online` 事件監聽，並顯示離線 UI 狀態。
 
 ### 2. 身份認證與權限控制 (Auth & Authorization)

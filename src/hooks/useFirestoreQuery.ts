@@ -3,8 +3,7 @@ import { collection, query, onSnapshot } from 'firebase/firestore';
 import { firestore } from '../firebase';
 
 /**
- * 這是為了完美取代 dexie-react-hooks 的 useLiveQuery 所設計的泛用 Hook。
- * 它會監聽 Firestore 上的子集合 (Subcollection)，並自動將 doc.id 轉為字串 ID 回傳。
+ * 監聽 Firestore 上的子集合 (Subcollection)，並自動將 doc.id 轉為字串 ID 回傳。
  *
  * **Important**: Firestore's orderBy silently excludes documents missing the sortByField.
  * To prevent data loss and avoid complex fallback logic, we query the subcollection
