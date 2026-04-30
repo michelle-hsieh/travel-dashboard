@@ -11,160 +11,139 @@
 
 ### 高層次系統架構 (High-Level System Architecture)
 
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│                        瀏覽器 (PWA Client)                            │
-│                                                                      │
-│  ┌────────────────────────┐      ┌────────────────────────────┐     │
-│  │  React 19 + Vite UI    │◀────▶│  ChatWidget (AI 助理)       │     │
-│  │  Home / Planner /      │      │  - 多 Provider 切換         │     │
-│  │  Logistics / Resources │      │  - 檔案解析 (PDF/DOCX/XLSX) │     │
-│  │  / Admin               │      └─────────────┬──────────────┘     │
-│  └───────────┬────────────┘                    │                    │
-│              │                                 │                    │
-│              ▼                                 │                    │
-│  ┌────────────────────────┐                    │                    │
-│  │  Firestore SDK         │                    │                    │
-│  │  + persistentLocalCache│                    │                    │
-│  │  (IndexedDB)           │                    │                    │
-│  └───────────┬────────────┘                    │                    │
-│              │                                 │                    │
-│  ┌───────────┴────────────┐                    │                    │
-│  │  Service Worker        │                    │                    │
-│  │  (VitePWA / Workbox)   │                    │                    │
-│  └───────────┬────────────┘                    │                    │
-└──────────────┼─────────────────────────────────┼────────────────────┘
-               │                                 │
-               ▼                                 ▼
-┌──────────────────────────────┐    ┌──────────────────────────────┐
-│      Firebase 雲端            │    │        外部服務               │
-│  ┌────────────────────────┐  │    │  ┌────────────────────────┐  │
-│  │ Firebase Auth          │  │    │  │ AI Providers           │  │
-│  │ (Google Sign-In)       │  │    │  │ OpenAI / Gemini /      │  │
-│  └────────────────────────┘  │    │  │ Cerebras               │  │
-│  ┌────────────────────────┐  │    │  └────────────────────────┘  │
-│  │ Cloud Firestore        │  │    │  ┌────────────────────────┐  │
-│  │ trips / flights /      │  │    │  │ Google Maps / Leaflet  │  │
-│  │ hotels / checklist...  │  │    │  │ + OSRM 路徑規劃         │  │
-│  └────────────────────────┘  │    │  └────────────────────────┘  │
-└──────────────────────────────┘    │  ┌────────────────────────┐  │
-                                    │  │ Google Fonts           │  │
-                                    │  └────────────────────────┘  │
-                                    └──────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Client["瀏覽器 / PWA Client"]
+        subgraph UI["UI 層"]
+            App["App.tsx\n路由 & 頁面狀態管理"]
+            Home["HomePage\n旅程列表"]
+            Planner["PlannerPage\n行程規劃 + 拖曳"]
+            Logistics["LogisticsPage\n航班/住宿/預算"]
+            Resources["ResourcesPage\n資源連結"]
+            Admin["AdminPage\n權限管理"]
+            Chat["ChatWidget\nAI 對話介面"]
+        end
+
+        subgraph State["狀態層"]
+            AuthCtx["AuthContext\n身份 & 權限 & 旅程狀態"]
+        end
+
+        subgraph Data["資料存取層"]
+            FSQuery["useFirestoreQuery\n即時資料訂閱"]
+            FSSync["useFirestoreSync\n旅程列表同步"]
+            LocalCache["Firestore persistentLocalCache\n本機離線快取 (IndexedDB)"]
+        end
+
+        subgraph Services["服務層"]
+            AISvc["aiService.ts\nAI 多供應商整合"]
+            TripIO["tripIO.ts\nJSON 匯出入"]
+            FileParse["extractFileText\n文件解析引擎"]
+        end
+    end
+
+    subgraph Firebase["Firebase (雲端)"]
+        FBAuth["Firebase Auth\nGoogle 登入"]
+        Firestore["Cloud Firestore\n即時資料庫"]
+    end
+
+    subgraph AI["AI 供應商 (第三方)"]
+        OpenAI["OpenAI\nGPT-4o"]
+        Gemini["Google Gemini\n2.5 Flash"]
+        Cerebras["Cerebras\nLlama 3.3 70B"]
+    end
+
+    subgraph Maps["地圖服務"]
+        Leaflet["Leaflet\n景點地圖"]
+        GoogleMaps["Google Places\n地址自動完成"]
+        OSRM["OSRM\n路線規劃"]
+    end
+
+    App --> Home & Planner & Logistics & Resources & Admin & Chat
+    App --> AuthCtx
+    AuthCtx --> FSSync
+    Planner & Logistics & Resources & Admin --> FSQuery
+    FSQuery & FSSync --> Firestore
+    Firestore <--> LocalCache
+    AuthCtx --> FBAuth
+    Chat --> AISvc
+    AISvc --> OpenAI & Gemini & Cerebras
+    AISvc --> FileParse
+    Planner --> Leaflet & OSRM
+    Planner & Logistics --> GoogleMaps
+    Home --> TripIO
 ```
 
 ---
 
 ### 資料流程圖 (Data Flow)
 
-```text
-  使用者          React 元件         Firestore SDK        IndexedDB         Cloud Firestore
-   (U)          (Pages/Hooks)      + onSnapshot      (LocalCache)            (Server)
-    │                │                   │                  │                    │
-    │  操作 UI       │                   │                  │                    │
-    ├───────────────▶│                   │                  │                    │
-    │                │  addDoc/update    │                  │                    │
-    │                ├──────────────────▶│  寫入本機         │                    │
-    │                │                   ├─────────────────▶│                    │
-    │                │  樂觀 UI 回填      │                  │                    │
-    │                │◀──────────────────┤◀─────────────────┤                    │
-    │                │                   │                  │  線上時自動同步     │
-    │                │                   │                  ├───────────────────▶│
-    │                │                   │                  │  server timestamp   │
-    │                │                   │                  │◀───────────────────┤
-    │                │                   │                  │                    │
-    │                │  訂閱集合          │                  │                    │
-    │                ├──────────────────▶│  先回本機快照     │                    │
-    │                │                   ├─────────────────▶│                    │
-    │                │  即時 snapshot    │                  │                    │
-    │                │◀──────────────────┤◀─────────────────┤                    │
-    │                │                   │                  │  推送雲端變更       │
-    │                │                   │                  │◀───────────────────┤
-    │                │  合併後 snapshot  │                  │                    │
-    │                │◀──────────────────┤                  │                    │
-    │                │                   │                  │                    │
-    │  ── 離線情境 ──                    │                  │                    │
-    │  繼續操作       │                   │                  │                    │
-    ├───────────────▶│  寫入排隊         │                  │                    │
-    │                ├──────────────────▶│─────────────────▶│ (mutation queue)   │
-    │                │                   │                  │                    │
-    │                │                   │   恢復連線後 flush│───────────────────▶│
-    │                │                   │                  │                    │
+```mermaid
+sequenceDiagram
+    participant User as 使用者
+    participant App as App.tsx
+    participant Auth as AuthContext
+    participant FBAuth as Firebase Auth
+    participant FS as Firestore
+    participant Cache as IndexedDB (persistentLocalCache)
+    participant Page as 各頁面
+    participant Chat as ChatWidget
+    participant AI as AI 供應商
+
+    User->>App: Google 登入
+    App->>FBAuth: signInWithPopup()
+    FBAuth-->>Auth: onAuthStateChanged(user)
+    Auth->>FS: 訂閱 trips 集合 (onSnapshot)
+    FS-->>Auth: 返回旅程列表與權限
+
+    User->>App: 選擇旅程
+    App->>Auth: setActiveTripId()
+    Auth->>FS: 訂閱 trips/{id} 文件
+    FS-->>Auth: 返回角色 (admin/member/guest)
+
+    User->>Page: 切換至 PlannerPage
+    Page->>FS: useFirestoreQuery('days', 'places')
+    FS-->>Cache: persistentLocalCache 同步
+    FS-->>Page: 即時資料推送
+
+    Note over Page,Cache: 離線時直接從 IndexedDB 讀取
+
+    User->>Chat: 輸入自然語言 (e.g. "幫我加一班機票")
+    Chat->>AI: sendMessage() + tool definitions
+    AI-->>Chat: tool_call: add_flight { ... }
+    Chat->>FS: addDoc('trips/{id}/flights', data)
+    FS-->>Page: 即時更新 UI
 ```
 
 ---
 
 ### AI 工具呼叫流程 (AI Tool Calling Flow)
 
-```text
-  ┌─────────────────────────────────────────┐
-  │  使用者於 ChatWidget 輸入訊息            │
-  │  或上傳 PDF / DOCX / PPTX / XLSX         │
-  └────────────────────┬────────────────────┘
-                       │
-                       ▼
-              ┌────────────────┐
-              │ 含附件？        │
-              └───┬────────┬───┘
-              是 │        │ 否
-                 ▼        │
-       ┌──────────────────┐│
-       │ 前端解析          ││
-       │ pdfjs-dist /     ││
-       │ jszip            ││
-       └────────┬─────────┘│
-                │          │
-                ▼          ▼
-       ┌─────────────────────────────────┐
-       │ 組裝 messages + tripContext     │
-       │ + systemPrompt                  │
-       └────────────────┬────────────────┘
-                        ▼
-              ┌─────────────────────┐
-              │ aiService           │
-              │ .sendMessage()      │
-              └─────────┬───────────┘
-                        │
-        ┌───────────────┼───────────────┐
-        ▼               ▼               ▼
-   ┌─────────┐    ┌─────────┐     ┌─────────┐
-   │ OpenAI  │    │ Gemini  │     │Cerebras │
-   │  Chat   │    │generate │     │  Chat   │
-   │  API    │    │ Content │     │   API   │
-   └────┬────┘    └────┬────┘     └────┬────┘
-        └──────────────┼────────────────┘
-                       ▼
-        ┌──────────────────────────────┐
-        │ 回傳 content 與/或 tool_calls │
-        └──────────────┬───────────────┘
-                       ▼
-              ┌────────────────┐
-              │ 有 tool_calls？│
-              └───┬────────┬───┘
-              否 │        │ 是
-                 ▼        ▼
-       ┌──────────────┐ ┌──────────────────────────────────┐
-       │ 串流文字     │ │ 分派至 App.tsx handler            │
-       │ 給 ChatWidget│ ├──────────────────────────────────┤
-       └──────┬───────┘ │ navigate_to_page → setPage()     │
-              │         │ add_flight / add_hotel /         │
-              │         │ add_checklist_item → addDoc()    │
-              │         │ create_full_trip → 切分長文本     │
-              │         │   → 產生 JSON → 寫入 trips        │
-              │         │ geocode_trip → 批次取得經緯度     │
-              │         └──────────────┬───────────────────┘
-              │                        │
-              │                        ▼
-              │         ┌──────────────────────────────┐
-              │         │ 將 tool 結果包成 role:'tool' │
-              │         │ 訊息，回傳給 sendMessage()    │
-              │         └──────────────┬───────────────┘
-              │                        │
-              │                        └─── 迴圈直到無 tool_calls
-              ▼
-       ┌──────────────┐
-       │  完成回合     │
-       └──────────────┘
+```mermaid
+flowchart LR
+    Input["使用者輸入\n文字 / 上傳檔案"]
+    Parse["文件解析\npdfjs / jszip"]
+    Send["sendMessage()\naiService.ts"]
+    Provider{"AI 供應商\n選擇"}
+    OAI["OpenAI API"]
+    GEM["Gemini API"]
+    CER["Cerebras API"]
+    Response{"回應類型"}
+    Text["純文字回覆\n顯示於 Chat"]
+    Tools["Tool Calls\n解析 JSON"]
+    Nav["navigate_to_page\n切換頁面"]
+    AddFlight["add_flight\n→ Firestore"]
+    AddHotel["add_hotel\n→ Firestore"]
+    AddCheck["add_checklist_item\n→ Firestore"]
+    FullTrip["create_full_trip\n→ 批次匯入"]
+    Geocode["geocode_trip\n→ 更新座標"]
+
+    Input --> Parse --> Send
+    Send --> Provider
+    Provider --> OAI & GEM & CER
+    OAI & GEM & CER --> Response
+    Response -->|"message"| Text
+    Response -->|"tool_calls"| Tools
+    Tools --> Nav & AddFlight & AddHotel & AddCheck & FullTrip & Geocode
 ```
 
 ---
