@@ -169,7 +169,7 @@ function AppInner() {
           })()}
         </div>
         <div className="auth-bar-right">
-          {role !== 'guest' && (
+          {user && role !== 'guest' && (
             <span className="auth-role-badge">
               {role === 'admin' ? '管理者' : '成員'}
             </span>
@@ -219,16 +219,18 @@ function AppInner() {
         )}
       </main>
 
-      <ChatWidget
-        tripContext={tripMeta ? { name: tripMeta.name, startDate: tripMeta.startDate, endDate: tripMeta.endDate } : undefined}
-        activeTripId={activeTripId}
-        onNavigate={handleAiNavigate}
-        onAddFlight={handleAiAddFlight}
-        onAddHotel={handleAiAddHotel}
-        onAddChecklistItem={handleAiAddChecklistItem}
-        onImportTrip={handleAiImportTrip}
-        onGeocodeTrip={handleAiGeocodeTrip}
-      />
+      {role === 'admin' && (
+        <ChatWidget
+          tripContext={tripMeta ? { name: tripMeta.name, startDate: tripMeta.startDate, endDate: tripMeta.endDate } : undefined}
+          activeTripId={activeTripId}
+          onNavigate={handleAiNavigate}
+          onAddFlight={handleAiAddFlight}
+          onAddHotel={handleAiAddHotel}
+          onAddChecklistItem={handleAiAddChecklistItem}
+          onImportTrip={handleAiImportTrip}
+          onGeocodeTrip={handleAiGeocodeTrip}
+        />
+      )}
 
       <nav className="bottom-nav">
         {allNavItems
