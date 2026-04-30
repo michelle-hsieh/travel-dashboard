@@ -71,7 +71,7 @@
   /* Layout */
   --nav-height: 64px;
   --sidebar-width: 72px;
-  --max-width: 960px;
+  --max-width: min(100%, 1280px);
 }
 
 /* Dark Morandi + Liquid Glass */
@@ -360,7 +360,7 @@ input:focus, textarea:focus, select:focus {
   .auth-bar {
     margin-left: 112px; /* sidebar 96px + margin 16px */
     margin-right: 24px;
-    max-width: var(--max-width);
+    /* No max-width override — let it stretch within the margins */
   }
 }
 
