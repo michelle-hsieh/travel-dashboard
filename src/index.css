@@ -1084,9 +1084,11 @@ input:focus, textarea:focus, select:focus {
     border-radius: 36px;
     gap: var(--sp-xs);
   }
-  .main-content { 
-    margin-left: 112px; 
-    max-width: var(--max-width);
+  .main-content {
+    margin-left: 112px;
+    margin-right: 24px;
+    max-width: 1280px;
+    width: auto;
   }
   .auth-bar {
     margin-left: 112px;
