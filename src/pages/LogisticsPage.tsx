@@ -690,15 +690,100 @@ function BudgetSection({ tripId, isAdmin, readOnly = false }: { tripId: string; 
     if (twd != null) totalTWD += twd;
   });
 
+  // Build detailed breakdown by source
+  const sourceIcons: Record<string, string> = { '機票': '✈️', '住宿': '🏨', '票券': '🎫', '景點': '📍', '清單': '✅', '預算': '💰' };
+  const sourceOrder = ['機票', '住宿', '票券', '景點', '預算', ...(isAdmin ? ['清單'] : [])];
+  type DetailItem = { label: string; amount: number; currency: string; twdAmount: number | null };
+  const detailsBySource: Record<string, DetailItem[]> = {};
+  flights?.forEach(f => { if (f.amount) { const src = '機票'; if (!detailsBySource[src]) detailsBySource[src] = []; detailsBySource[src].push({ label: `${f.airline || ''} ${f.flightNo || ''}`.trim() || '航班', amount: f.amount, currency: f.currency || 'TWD', twdAmount: convertToTWD(f.amount, f.currency || 'TWD') }); } });
+  hotels?.forEach(h => { if (h.amount) { const src = '住宿'; if (!detailsBySource[src]) detailsBySource[src] = []; detailsBySource[src].push({ label: h.name || '住宿', amount: h.amount, currency: h.currency || 'TWD', twdAmount: convertToTWD(h.amount, h.currency || 'TWD') }); } });
+  tickets?.forEach(t => { if (t.amount) { const src = '票券'; if (!detailsBySource[src]) detailsBySource[src] = []; detailsBySource[src].push({ label: t.title || '票券', amount: t.amount, currency: t.currency || 'TWD', twdAmount: convertToTWD(t.amount, t.currency || 'TWD') }); } });
+  places?.forEach(p => { if (p.amount) { const src = '景點'; if (!detailsBySource[src]) detailsBySource[src] = []; detailsBySource[src].push({ label: p.name || '景點', amount: p.amount, currency: p.currency || 'JPY', twdAmount: convertToTWD(p.amount, p.currency || 'JPY') }); } });
+  budgetItems?.forEach(b => { if (b.amount) { const src = '預算'; if (!detailsBySource[src]) detailsBySource[src] = []; detailsBySource[src].push({ label: `${b.category || ''} ${b.description || ''}`.trim() || '自訂項目', amount: b.amount, currency: b.currency, twdAmount: convertToTWD(b.amount, b.currency) }); } });
+  if (isAdmin) {
+    checklistItems?.forEach(c => { if (c.amount) { const src = '清單'; if (!detailsBySource[src]) detailsBySource[src] = []; detailsBySource[src].push({ label: c.text || '清單項目', amount: c.amount, currency: c.currency || 'TWD', twdAmount: convertToTWD(c.amount, c.currency || 'TWD') }); } });
+  }
+  const activeSources = sourceOrder.filter(src => detailsBySource[src]?.length);
+
   return (
     <div>
+      {/* Total summary banner */}
       <div className="budget-summary">
         <div>
           <div className="total-label">總花費</div>
           <div className="total-amount">{totalTWD > 0 ? `TWD ${totalTWD.toLocaleString()}` : '—'}</div>
         </div>
+        {Object.keys(totalsByCurrency).length > 1 && (
+          <div style={{ display: 'flex', gap: 'var(--sp-md)', flexWrap: 'wrap', opacity: 0.85, fontSize: '0.85rem' }}>
+            {Object.entries(totalsByCurrency).map(([cur, val]) => (
+              <span key={cur}>{cur} {val.toLocaleString()}</span>
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Detailed breakdown table */}
+      {activeSources.length > 0 && (
+        <div style={{ marginBottom: 'var(--sp-lg)' }}>
+          <div className="section-title">📊 花費明細</div>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-glass)' }}>
+                  <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600 }}>類別</th>
+                  <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600 }}>項目</th>
+                  <th style={{ textAlign: 'right', padding: '10px 12px', fontWeight: 600 }}>金額</th>
+                  <th style={{ textAlign: 'right', padding: '10px 12px', fontWeight: 600, fontSize: '0.75rem', color: 'var(--text-muted)' }}>≈ TWD</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeSources.map(src => {
+                  const items = detailsBySource[src];
+                  const srcTWD = items.reduce((sum, i) => sum + (i.twdAmount ?? 0), 0);
+                  return (
+                    <Fragment key={src}>
+                      {items.map((item, idx) => (
+                        <tr key={`${src}-${idx}`} style={{ borderBottom: '1px solid var(--border)' }}>
+                          {idx === 0 && (
+                            <td rowSpan={items.length} style={{ padding: '8px 12px', verticalAlign: 'top', borderRight: '1px solid var(--border)', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                              {sourceIcons[src] || '📦'} {src}
+                            </td>
+                          )}
+                          <td style={{ padding: '6px 12px', color: 'var(--text-secondary)' }}>{item.label}</td>
+                          <td style={{ padding: '6px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            {item.amount.toLocaleString()} <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{item.currency}</span>
+                          </td>
+                          <td style={{ padding: '6px 12px', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                            {item.twdAmount != null ? item.twdAmount.toLocaleString() : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr style={{ borderBottom: '2px solid var(--border)', background: 'var(--bg-glass)' }}>
+                        <td colSpan={2} style={{ padding: '6px 12px', textAlign: 'right', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent)' }}>
+                          {src} 小計
+                        </td>
+                        <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>
+                          TWD {srcTWD.toLocaleString()}
+                        </td>
+                      </tr>
+                    </Fragment>
+                  );
+                })}
+                <tr style={{ background: 'var(--accent-glow)' }}>
+                  <td colSpan={2} style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, fontSize: '0.9rem' }}>
+                    合計
+                  </td>
+                  <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, fontSize: '1rem' }}>
+                    TWD {totalTWD.toLocaleString()}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Custom budget items */}
       <div className="section-title">自訂預算項目</div>
       {budgetItems?.map(b => (
         <div key={b.id} className="card" style={{ marginBottom: 'var(--sp-sm)', padding: 'var(--sp-sm) var(--sp-md)' }}>
