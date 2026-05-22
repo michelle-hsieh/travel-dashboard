@@ -300,6 +300,11 @@ function TicketsSection({ tripId, readOnly = false }: { tripId: string; readOnly
                 <InlineEdit value={t.amount != null ? `${t.amount}` : ''} onSave={v => update(t.id!, { amount: v ? parseFloat(v) || 0 : undefined })} placeholder="💰 金額" />
                 <InlineEdit value={t.currency || ''} onSave={v => update(t.id!, { currency: v })} placeholder="幣別" />
               </div>
+              {/* 附加檔案區塊 */}
+              <div style={{ marginTop: 'var(--sp-sm)', display: 'flex', gap: 'var(--sp-sm)', alignItems: 'center', flexWrap: 'wrap' }}>
+                {!readOnly && <FileUpload tripId={tripId} parentId={t.id!} parentType="ticket" />}
+                <AttachmentList tripId={tripId} parentId={t.id!} parentType="ticket" />
+              </div>
             </div>
             <button className="btn-icon btn-danger" onClick={() => remove(t.id!)}>🗑️</button>
           </div>
