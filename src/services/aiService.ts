@@ -3,7 +3,7 @@
 
 // ── Types ──
 
-export type AIProvider = 'openai' | 'gemini' | 'cerebras';
+export type AIProvider = 'gemini';
 
 export interface ModelInfo {
   id: string;
@@ -45,20 +45,8 @@ export interface SendMessageResult {
 // ── Constants ──
 
 const PROVIDER_KEY = 'ai_provider';
-const OPENAI_KEY_STORE = 'openai_api_key';
 const GEMINI_KEY_STORE = 'gemini_api_key';
-const OPENAI_MODEL_STORE = 'openai_model';
 const GEMINI_MODEL_STORE = 'gemini_model';
-const CEREBRAS_KEY_STORE = 'cerebras_api_key';
-const CEREBRAS_MODEL_STORE = 'cerebras_model';
-
-export const OPENAI_MODELS: ModelInfo[] = [
-  { id: 'gpt-4o', label: 'GPT-4o', description: '快速且聰明' },
-  { id: 'gpt-4o-mini', label: 'GPT-4o Mini', description: '最便宜' },
-  { id: 'gpt-4.1', label: 'GPT-4.1', description: '最新最強' },
-  { id: 'gpt-4.1-mini', label: 'GPT-4.1 Mini', description: '新一代平衡' },
-  { id: 'gpt-4.1-nano', label: 'GPT-4.1 Nano', description: '新一代最快' },
-];
 
 export const GEMINI_MODELS: ModelInfo[] = [
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', description: '免費・快速' },
@@ -67,24 +55,8 @@ export const GEMINI_MODELS: ModelInfo[] = [
   { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', description: '免費・輕量' },
 ];
 
-export const CEREBRAS_MODELS: ModelInfo[] = [
-  { id: 'llama3.3-70b', label: 'Llama 3.3 70B', description: '強力推薦：解析能力最強' },
-  { id: 'llama3.1-8b', label: 'Llama 3.1 8B', description: '極速版' },
-  { id: 'gpt-oss-120b', label: 'GPT OSS 120B', description: '目前最快的超大模型' },
-  { id: 'qwen-3-235b-a22b-instruct-2507', label: 'Qwen 3 235B', description: '高階指導模型' },
-  { id: 'deepseek-r1-distill-llama-70b', label: 'DeepSeek R1 (70B)', description: '蒸餾模型' }
-];
-
 
 export const PROVIDER_INFO: Record<AIProvider, { label: string; icon: string; keyPrefix: string; keyPlaceholder: string; keyUrl: string; keyUrlLabel: string }> = {
-  openai: {
-    label: 'OpenAI',
-    icon: '🟢',
-    keyPrefix: 'sk-',
-    keyPlaceholder: 'sk-...',
-    keyUrl: 'https://platform.openai.com/api-keys',
-    keyUrlLabel: '前往 OpenAI 申請 API Key ↗',
-  },
   gemini: {
     label: 'Gemini',
     icon: '🔵',
@@ -93,22 +65,12 @@ export const PROVIDER_INFO: Record<AIProvider, { label: string; icon: string; ke
     keyUrl: 'https://aistudio.google.com/apikey',
     keyUrlLabel: '前往 Google AI Studio 申請 API Key ↗',
   },
-  cerebras: {
-    label: 'Cerebras',
-    icon: '⚡',
-    keyPrefix: '',
-    keyPlaceholder: 'csk-...',
-    keyUrl: 'https://cloud.cerebras.ai/',
-    keyUrlLabel: '前往 Cerebras Cloud 申請 API Key ↗',
-  },
 };
 
 // ── Provider Management ──
 
 export function getProvider(): AIProvider {
-  const p = localStorage.getItem(PROVIDER_KEY);
-  if (p === 'openai' || p === 'gemini' || p === 'cerebras') return p;
-  return 'openai';
+  return 'gemini';
 }
 
 export function setProvider(p: AIProvider): void {
@@ -118,47 +80,33 @@ export function setProvider(p: AIProvider): void {
 // ── Key Management ──
 
 export function getApiKey(provider?: AIProvider): string | null {
-  const p = provider ?? getProvider();
-  if (p === 'openai') return localStorage.getItem(OPENAI_KEY_STORE);
-  if (p === 'gemini') return localStorage.getItem(GEMINI_KEY_STORE);
-  if (p === 'cerebras') return localStorage.getItem(CEREBRAS_KEY_STORE);
-  return null;
+  return localStorage.getItem(GEMINI_KEY_STORE);
 }
 
 export function setApiKey(key: string, provider?: AIProvider): void {
-  const p = provider ?? getProvider();
-  const store = p === 'openai' ? OPENAI_KEY_STORE : p === 'gemini' ? GEMINI_KEY_STORE : CEREBRAS_KEY_STORE;
-  localStorage.setItem(store, key.trim());
+  localStorage.setItem(GEMINI_KEY_STORE, key.trim());
 }
 
 export function clearApiKey(provider?: AIProvider): void {
-  const p = provider ?? getProvider();
-  const store = p === 'openai' ? OPENAI_KEY_STORE : p === 'gemini' ? GEMINI_KEY_STORE : CEREBRAS_KEY_STORE;
-  localStorage.removeItem(store);
+  localStorage.removeItem(GEMINI_KEY_STORE);
 }
 
 export function hasApiKey(provider?: AIProvider): boolean {
   const key = getApiKey(provider);
   if (!key || key.length < 8) return false;
-  const p = provider ?? getProvider();
-  if (p === 'openai') return key.startsWith('sk-');
   return true; // Gemini keys can vary
 }
 
 // ── Model Management ──
 
 export function getAvailableModels(provider?: AIProvider): ModelInfo[] {
-  const p = provider ?? getProvider();
-  if (p === 'openai') return OPENAI_MODELS;
-  if (p === 'gemini') return GEMINI_MODELS;
-  return CEREBRAS_MODELS;
+  return GEMINI_MODELS;
 }
 
 export function getSelectedModel(provider?: AIProvider): string {
-  const p = provider ?? getProvider();
-  const storeKey = p === 'openai' ? OPENAI_MODEL_STORE : p === 'gemini' ? GEMINI_MODEL_STORE : CEREBRAS_MODEL_STORE;
+  const storeKey = GEMINI_MODEL_STORE;
   const stored = localStorage.getItem(storeKey);
-  const models = getAvailableModels(p);
+  const models = getAvailableModels(provider);
   if (stored && models.some(m => m.id === stored)) return stored;
   
   // If stored model is invalid or legacy, forcefully set and return the first available model
@@ -168,8 +116,7 @@ export function getSelectedModel(provider?: AIProvider): string {
 }
 
 export function setSelectedModel(model: string, provider?: AIProvider): void {
-  const p = provider ?? getProvider();
-  const storeKey = p === 'openai' ? OPENAI_MODEL_STORE : p === 'gemini' ? GEMINI_MODEL_STORE : CEREBRAS_MODEL_STORE;
+  const storeKey = GEMINI_MODEL_STORE;
   localStorage.setItem(storeKey, model);
 }
 
@@ -340,149 +287,6 @@ async function enforceCooldown() {
   lastRequestTime = Date.now();
 }
 
-// Generic OpenAI-Style Helper
-// ══════════════════════════════════
-
-async function sendOpenAIStyle({ 
-  messages, 
-  tripContext, 
-  onChunk, 
-  signal, 
-  useTools, 
-  systemPrompt,
-  provider,
-  baseUrl,
-  apiKey,
-  model
-}: SendMessageOptions & { provider: AIProvider, baseUrl: string, apiKey: string, model: string }): Promise<SendMessageResult> {
-  await enforceCooldown();
-
-  const systemMessage: ChatMessage = { role: 'system', content: systemPrompt || buildSystemPrompt(tripContext) };
-  const fullMessages = [systemMessage, ...messages];
-
-  const body: any = {
-    model,
-    messages: fullMessages,
-    temperature: provider === 'cerebras' ? 0.3 : 0.7, // Lower temperature for more stable tool calls on Cerebras
-    max_tokens: provider === 'cerebras' ? 4096 : 8192,
-  };
-
-  if (useTools) {
-    // Current OpenAI standard
-    body.tools = TOOL_DEFS.map(t => ({ type: 'function', function: t }));
-    body.tool_choice = 'auto';
-    
-    // Cerebras often performs better WITH streaming disabled for tools 
-    // or very specific formatting. We ensure stream is false here.
-    body.stream = false;
-  } else {
-    body.stream = !!onChunk;
-  }
-
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-    signal,
-  });
-
-  if (!response.ok) {
-    let errMsg = `未知錯誤 (${response.status})`;
-    try {
-      const err = await response.json();
-      // Handle various error formats (OpenAI, Cerebras, etc.)
-      const rawMsg = err?.error?.message || err?.message || JSON.stringify(err);
-      
-      // Map specific errors to user-friendly messages
-      if (rawMsg.includes('too_many_tokens_error') || rawMsg.includes('limit exceeded')) {
-        errMsg = `${provider} 模型目前使用量過高（token 限制），請稍候 10-20 秒後再試。`;
-      } else if (rawMsg.includes('rate_limit')) {
-        errMsg = `${provider} 請求頻率過高，請稍慢點再試。`;
-      } else {
-        errMsg = rawMsg;
-      }
-    } catch { /* use default */ }
-
-    console.error(`${provider} API Error:`, errMsg);
-    
-    if (response.status === 401) throw new Error(`${provider} API Key 無效，請重新設定。`);
-    if (response.status === 429) throw new Error(errMsg); // Use our parsed message
-    if (response.status === 404) throw new Error(`模型 ${model} 在 ${provider} 不存在或無法使用。`);
-    throw new Error(`${provider} API 錯誤: ${errMsg}`);
-  }
-
-  // Streaming (only without tools)
-  if (!useTools && onChunk && response.body) {
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let result = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const text = decoder.decode(value, { stream: true });
-      for (const line of text.split('\n').filter(l => l.startsWith('data: '))) {
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') break;
-        try {
-          const parsed = JSON.parse(data);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) { result += content; onChunk(result); }
-        } catch { /* skip */ }
-      }
-    }
-    return { content: result };
-  }
-
-  const data = await response.json();
-  const choice = data.choices?.[0]?.message;
-
-  if (!choice) return { content: '（AI 沒有回應，請再試一次）' };
-
-  return {
-    content: choice.content || null,
-    toolCalls: choice.tool_calls,
-  };
-}
-
-// ══════════════════════════════════
-// OpenAI API
-// ══════════════════════════════════
-
-async function sendOpenAI(options: SendMessageOptions): Promise<SendMessageResult> {
-  const apiKey = getApiKey('openai');
-  if (!apiKey) throw new Error('請先設定 OpenAI API Key');
-  const model = getSelectedModel('openai');
-
-  return sendOpenAIStyle({
-    ...options,
-    provider: 'openai',
-    baseUrl: 'https://api.openai.com/v1',
-    apiKey,
-    model
-  });
-}
-
-// ══════════════════════════════════
-// Cerebras API
-// ══════════════════════════════════
-
-async function sendCerebras(options: SendMessageOptions): Promise<SendMessageResult> {
-  const apiKey = getApiKey('cerebras');
-  if (!apiKey) throw new Error('請先設定 Cerebras API Key');
-  const model = getSelectedModel('cerebras');
-
-  return sendOpenAIStyle({
-    ...options,
-    provider: 'cerebras',
-    baseUrl: 'https://api.cerebras.ai/v1',
-    apiKey,
-    model
-  });
-}
-
 // ══════════════════════════════════
 // Gemini API
 // ══════════════════════════════════
@@ -612,19 +416,13 @@ export async function sendMessage(options: SendMessageOptions): Promise<SendMess
 
   for (let i = 0; i <= maxRetries; i++) {
     try {
-      const provider = getProvider();
-      if (provider === 'gemini') return await sendGemini(options);
-      if (provider === 'cerebras') return await sendCerebras(options);
-      return await sendOpenAI(options);
+      return await sendGemini(options);
     } catch (err: any) {
       const msg = err.message || '';
       const isRetryable = msg.includes('429') || 
                           msg.includes('Too Many Requests') || 
                           msg.includes('rate_limit') ||
-                          msg.includes('high traffic') ||       // Cerebras actual error
-                          msg.includes('try again soon') ||     // Cerebras alt phrasing
                           msg.includes('請求過多') ||            // Gemini 中文錯誤
-                          msg.includes('使用量過高') ||          // Cerebras 中文錯誤
                           msg.includes('頻率過高') ||            // alt Chinese phrasing
                           msg.includes('RESOURCE_EXHAUSTED');
       

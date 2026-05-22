@@ -85,7 +85,7 @@ export default function ChatWidget({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const providerInfo = PROVIDER_INFO[provider] || PROVIDER_INFO.openai;
+  const providerInfo = PROVIDER_INFO[provider] || PROVIDER_INFO.gemini;
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -556,7 +556,7 @@ const normalizeToolName = (name: string) => name.toLowerCase().replace(/_/g, '')
             <div className="chat-setup">
               {/* Provider Toggle in Setup */}
               <div className="chat-provider-tabs">
-                {(['openai', 'gemini', 'cerebras'] as AIProvider[]).map(p => (
+                {(['gemini'] as AIProvider[]).map(p => (
                   <button
                     key={p}
                     className={`chat-provider-tab ${provider === p ? 'active' : ''}`}
@@ -569,12 +569,7 @@ const normalizeToolName = (name: string) => name.toLowerCase().replace(/_/g, '')
               <div className="chat-setup-icon">🔑</div>
               <h3>設定 {providerInfo.label} API Key</h3>
               <p>
-                {provider === 'gemini'
-                  ? <>Google AI Studio 提供免費額度，<br />非常適合一般使用！</>
-                  : provider === 'cerebras'
-                  ? <>Cerebras 提供全球最快的推理速度，<br />支援 Llama 3.3, DeepSeek 等頂尖模型。</>
-                  : <>請到 OpenAI Platform 申請 API Key，<br />需要先儲值 $5 美金以上。</>
-                }
+                <>Google AI Studio 提供免費額度，<br />非常適合一般使用！</>
               </p>
               <input
                 className="chat-setup-input"
@@ -605,7 +600,7 @@ const normalizeToolName = (name: string) => name.toLowerCase().replace(/_/g, '')
               <div className="chat-settings-section">
                 <h4>AI 供應商</h4>
                 <div className="chat-provider-tabs">
-                  {(['openai', 'gemini', 'cerebras'] as AIProvider[]).map(p => (
+                  {(['gemini'] as AIProvider[]).map(p => (
                     <button
                       key={p}
                       className={`chat-provider-tab ${provider === p ? 'active' : ''}`}
