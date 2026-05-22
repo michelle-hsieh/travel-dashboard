@@ -46,6 +46,11 @@
 }
 
 /* --- Chat Panel --- */
+/*
+ * Liquid glass: strong backdrop-filter keeps the frosted-glass look,
+ * but we use a higher-opacity tint (0.82) so the blurred background
+ * never bleeds through text. Global CSS vars stay untouched.
+ */
 .chat-panel {
   position: fixed;
   bottom: 104px;
@@ -54,9 +59,10 @@
   max-width: calc(100vw - 32px);
   height: 520px;
   max-height: calc(100vh - 160px);
-  background: var(--bg-secondary);
-  backdrop-filter: var(--glass-blur-heavy);
-  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  /* Higher opacity tint so background content doesn't show through text */
+  background: rgba(253, 246, 245, 0.82);
+  backdrop-filter: blur(48px) saturate(240%);
+  -webkit-backdrop-filter: blur(48px) saturate(240%);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--glass-outer-glow), var(--glass-inner-glow), var(--shadow-lg);
@@ -65,6 +71,12 @@
   flex-direction: column;
   overflow: hidden;
   animation: chatSlideUp var(--duration) var(--ease);
+}
+
+@media (prefers-color-scheme: dark) {
+  .chat-panel {
+    background: rgba(38, 26, 24, 0.88);
+  }
 }
 
 @keyframes chatSlideUp {
@@ -196,12 +208,17 @@
 }
 
 .chat-msg.assistant .chat-bubble {
-  background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  /* Solid enough so text is always readable against blurred bg */
+  background: rgba(255, 255, 255, 0.78);
   border: 1px solid var(--border);
   color: var(--text-primary);
   border-bottom-left-radius: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .chat-msg.assistant .chat-bubble {
+    background: rgba(58, 42, 40, 0.9);
+  }
 }
 
 .chat-msg-time {
