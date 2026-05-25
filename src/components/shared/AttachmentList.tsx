@@ -8,9 +8,10 @@ interface AttachmentListProps {
   tripId: string;
   parentId: string; // ✅ 確保這裡是 string
   parentType: ParentType;
+  readOnly?: boolean;
 }
 
-export default function AttachmentList({ tripId, parentId, parentType }: AttachmentListProps) {
+export default function AttachmentList({ tripId, parentId, parentType, readOnly = false }: AttachmentListProps) {
   const allAttachments = useFirestoreQuery<Attachment>(tripId, 'attachments', 'createdAt') || [];
   const attachments = allAttachments.filter((a: Attachment) => a.parentType === parentType && String(a.parentId) === String(parentId));
 
@@ -39,7 +40,7 @@ export default function AttachmentList({ tripId, parentId, parentType }: Attachm
           <span style={{ cursor: 'pointer', color: 'var(--accent-light)' }} onClick={() => setSelected(att)}>
             📎 {att.fileName}
           </span>
-          <button className="btn-icon" style={{ fontSize: '0.6rem', color: 'var(--danger)' }} onClick={() => handleDelete(att.id!)}>✕</button>
+          {!readOnly && <button className="btn-icon" style={{ fontSize: '0.6rem', color: 'var(--danger)' }} onClick={() => handleDelete(att.id!)}>✕</button>}
         </div>
       ))}
 

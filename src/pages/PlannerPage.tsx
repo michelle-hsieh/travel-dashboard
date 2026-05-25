@@ -6,7 +6,8 @@ import InlineEdit from '../components/shared/InlineEdit';
 import PlaceAutocomplete from '../components/shared/PlaceAutocomplete';
 import RouteMap from '../components/shared/RouteMap';
 import EmojiPicker from '../components/shared/EmojiPicker';
-import type { Place, Day, Hotel, Flight, Note, ChecklistItem } from '../types';
+import AttachmentList from '../components/shared/AttachmentList';
+import type { Place, Day, Hotel, Flight, Note, ChecklistItem, Ticket } from '../types';
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent, useDroppable, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -498,11 +499,15 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
   const { role } = useAuth();
   const notes = useFirestoreQuery<Note>(tripId, 'notes', 'sortOrder')?.filter(n => n.placeId === place.id);
   const checklistItems = useFirestoreQuery<ChecklistItem>(tripId, 'checklistItems', 'sortOrder');
+  const tickets = useFirestoreQuery<Ticket>(tripId, 'tickets', 'sortOrder');
 
   const isAdmin = role === 'admin';
 
   const linkedChecklist = checklistItems?.filter(item =>
     item.location && place.name && item.location.trim().toLowerCase() === place.name.trim().toLowerCase()
+  ) || [];
+  const linkedTickets = tickets?.filter(ticket =>
+    ticket.venue && place.name && ticket.venue.trim().toLowerCase() === place.name.trim().toLowerCase()
   ) || [];
 
   const updatePlace = async (updates: Partial<Place>) => {
@@ -589,6 +594,24 @@ function PlaceCard({ place, index, days, tripId, dragHandleProps, onPromote, isB
                 <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.82rem', padding: '4px 0', opacity: item.checked ? 0.5 : 1 }}>
                   <input type="checkbox" checked={item.checked} onChange={(e) => updateDoc(doc(firestore, 'trips', String(tripId), 'checklistItems', String(item.id!)), { checked: e.target.checked })} style={{ width: 14, height: 14 }} disabled={readOnly} />
                   <span>{item.text}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {linkedTickets.length > 0 && (
+            <div style={{ marginTop: 'var(--sp-sm)', background: 'rgba(var(--accent-rgb, 176,141,122), 0.05)', borderRadius: '8px', padding: 'var(--sp-xs) var(--sp-sm)', border: '1px solid rgba(var(--accent-rgb, 176,141,122), 0.1)' }}>
+              {linkedTickets.map(ticket => (
+                <div key={ticket.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: '0.82rem', padding: '4px 0' }}>
+                  <span aria-hidden="true">🎫</span>
+                  <div>
+                    <div>{ticket.title || '票券'}</div>
+                    {(ticket.date || ticket.confirmNo) && (
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                        {[ticket.date, ticket.confirmNo].filter(Boolean).join(' / ')}
+                      </div>
+                    )}
+                    <AttachmentList tripId={tripId} parentId={ticket.id!} parentType="ticket" readOnly />
+                  </div>
                 </div>
               ))}
             </div>
